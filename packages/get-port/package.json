@@ -1,0 +1,52 @@
+{
+  "name": "@graph/get-port",
+  "description": "",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "clean": "rm -rf dist",
+    "prebuild": "pnpm run clean",
+    "prebuild:debug": "pnpm run clean",
+    "build": "tsc",
+    "build:debug": "tsc -p tsconfig.debug.json",
+    "pretest": "pnpm run build:debug",
+    "test": "pnpm run test:run",
+    "keygen": "chmod +x ./scripts/keygen.sh && ./scripts/keygen.sh",
+    "pretest:run": "pnpm run keygen",
+    "test:run": "ava"
+  },
+  "dependencies": {
+    "get-port": "catalog:",
+    "proper-lockfile": "catalog:",
+    "@code-essentials/utils": "catalog:"
+  },
+  "devDependencies": {
+    "@ava/typescript": "catalog:",
+    "@code-essentials/tsconfig": "catalog:",
+    "ava": "catalog:",
+    "typescript": "catalog:",
+    "@types/node": "catalog:",
+    "@types/proper-lockfile": "catalog:"
+  },
+  "ava": {
+    "files": [
+      "src/**/*.spec.ts"
+    ],
+    "typescript": {
+      "rewritePaths": {
+        "src/": "dist/"
+      },
+      "extensions": [
+        "ts"
+      ],
+      "compile": false
+    }
+  },
+  "author": {
+    "name": "Isaac Valdez",
+    "email": "isaac_valdez@msn.com",
+    "url": "https://i12345.github.io"
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "name": "@code-essentials/networking-server",
+  "description": "",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "clean": "rm -rf dist",
+    "prebuild": "pnpm run clean",
+    "prebuild:debug": "pnpm run clean",
+    "build": "tsc",
+    "build:debug": "tsc -p tsconfig.debug.json",
+    "pretest": "pnpm run build:debug",
+    "test": "pnpm run test:run",
+    "keygen": "chmod +x ./scripts/keygen.sh && ./scripts/keygen.sh",
+    "pretest:run": "pnpm run keygen",
+    "test:run": "ava"
+  },
+  "dependencies": {
+    "@code-essentials/utils": "catalog:",
+    "@code-essentials/networking": "workspace:",
+    "socket.io": "catalog:",
+    "bufferutil": "catalog:",
+    "@fails-components/webtransport": "catalog:",
+    "@fails-components/webtransport-transport-http3-quiche": "catalog:"
+  },
+  "devDependencies": {
+    "@graph/get-port": "workspace:",
+    "utf-8-validate": "catalog:",
+    "@ava/typescript": "catalog:",
+    "@code-essentials/tsconfig": "catalog:",
+    "ava": "catalog:",
+    "typescript": "catalog:"
+  },
+  "ava": {
+    "files": [
+      "src/**/*.spec.ts"
+    ],
+    "typescript": {
+      "rewritePaths": {
+        "src/": "dist/"
+      },
+      "extensions": [
+        "ts"
+      ],
+      "compile": false
+    }
+  },
+  "author": {
+    "name": "Isaac Valdez",
+    "email": "isaac_valdez@msn.com",
+    "url": "https://i12345.github.io"
+  }
+}

@@ -1,0 +1,21 @@
+{
+    "configurations": [
+        {
+            "name": "test",
+            "request": "launch",
+            "runtimeArgs": [
+                "run-script",
+                "test"
+            ],
+            "runtimeExecutable": "pnpm",
+            "sourceMaps": true,
+            "pauseForSourceMap": true,
+            "preLaunchTask": "npm: build:debug",
+            "internalConsoleOptions": "neverOpen",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "type": "node"
+        }
+    ]
+}

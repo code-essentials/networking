@@ -1,0 +1,26 @@
+packages:
+  - packages/*
+
+catalog:
+  '@ava/typescript': latest
+  '@code-essentials/tsconfig': latest
+  '@code-essentials/utils': latest
+  '@fails-components/webtransport': latest
+  '@fails-components/webtransport-transport-http3-quiche': latest
+  '@types/node': latest
+  '@types/proper-lockfile': latest
+  ava: latest
+  bufferutil: latest
+  get-port: latest
+  proper-lockfile: latest
+  socket.io: latest
+  socket.io-cbor-x-parser: latest
+  socket.io-client: latest
+  typescript: latest
+  utf-8-validate: latest
+
+onlyBuiltDependencies:
+  - '@fails-components/webtransport-transport-http3-quiche'
+  - bufferutil
+  - cbor-extract
+  - utf-8-validate
