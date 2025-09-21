@@ -1,6 +1,6 @@
 import { ClientNetworkNode, ClientNetworkNodeModules, ClientNetworkProtocols, listen, NetworkNodeConnection, NetworkNodeModule, NetworkNodeModuleConnection, PeerToPeerProtocols, send, ServerNetworkProtocols } from '@code-essentials/networking'
 import { ServerNetworkNode, ServerNetworkNodeModules } from './server.js'
-import { getPort } from "@graph/get-port"
+import { getPort } from "@code-essentials/get-port"
 import { readFile } from "node:fs/promises"
 import test from "ava"
 import { AsyncVariable } from '@code-essentials/utils'

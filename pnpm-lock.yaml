@@ -115,7 +115,7 @@ importers:
       '@code-essentials/tsconfig':
         specifier: 'catalog:'
         version: 1.0.3(@tsconfig/node24@24.0.1)(@tsconfig/strictest@2.0.5)
-      '@graph/get-port':
+      '@code-essentials/get-port':
         specifier: workspace:^
         version: link:../get-port
       ava:
@@ -161,7 +161,7 @@ importers:
       '@code-essentials/tsconfig':
         specifier: 'catalog:'
         version: 1.0.3(@tsconfig/node24@24.0.1)(@tsconfig/strictest@2.0.5)
-      '@graph/get-port':
+      '@code-essentials/get-port':
         specifier: 'workspace:'
         version: link:../get-port
       ava:

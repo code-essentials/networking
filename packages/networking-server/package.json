@@ -27,7 +27,7 @@
     "@fails-components/webtransport-transport-http3-quiche": "catalog:"
   },
   "devDependencies": {
-    "@graph/get-port": "workspace:",
+    "@code-essentials/get-port": "workspace:",
     "utf-8-validate": "catalog:",
     "@ava/typescript": "catalog:",
     "@code-essentials/tsconfig": "catalog:",

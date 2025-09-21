@@ -26,7 +26,7 @@
   "devDependencies": {
     "@ava/typescript": "catalog:",
     "@code-essentials/tsconfig": "catalog:",
-    "@graph/get-port": "workspace:^",
+    "@code-essentials/get-port": "workspace:^",
     "ava": "catalog:",
     "bufferutil": "catalog:",
     "socket.io": "catalog:",
