@@ -2,6 +2,10 @@
   "name": "networking",
   "description": "",
   "version": "1.0.0",
+  "private": "true",
+  "repository": {
+    "url": "https://github.com/code-essentials/networking"
+  },
   "scripts": {
     "clean": "turbo run clean",
     "build": "turbo run build",

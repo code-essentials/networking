@@ -15,7 +15,8 @@
     "test": "pnpm run test:run",
     "keygen": "chmod +x ./scripts/keygen.sh && ./scripts/keygen.sh",
     "pretest:run": "pnpm run keygen",
-    "test:run": "ava"
+    "test:run": "ava",
+    "prepublishOnly": "pnpm test && pnpm build"
   },
   "dependencies": {
     "@code-essentials/utils": "catalog:",
