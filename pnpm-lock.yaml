@@ -7,52 +7,52 @@ settings:
 catalogs:
   default:
     '@ava/typescript':
-      specifier: latest
+      specifier: ^6
       version: 6.0.0
     '@code-essentials/tsconfig':
-      specifier: latest
+      specifier: ^1.0
       version: 1.0.3
     '@code-essentials/utils':
-      specifier: latest
+      specifier: ^1.0
       version: 1.0.3
     '@fails-components/webtransport':
-      specifier: latest
+      specifier: ^1.4
       version: 1.4.2
     '@fails-components/webtransport-transport-http3-quiche':
-      specifier: latest
+      specifier: ^1.4
       version: 1.4.2
     '@types/node':
-      specifier: latest
+      specifier: ^24.5
       version: 24.5.2
     '@types/proper-lockfile':
-      specifier: latest
+      specifier: ^4.1
       version: 4.1.4
     ava:
-      specifier: latest
+      specifier: ^6.4
       version: 6.4.1
     bufferutil:
-      specifier: latest
+      specifier: ^4.0
       version: 4.0.9
     get-port:
-      specifier: latest
+      specifier: ^7.1
       version: 7.1.0
     proper-lockfile:
-      specifier: latest
+      specifier: ^4.1
       version: 4.1.2
     socket.io:
-      specifier: latest
+      specifier: ^4.8
       version: 4.8.1
     socket.io-cbor-x-parser:
-      specifier: latest
+      specifier: ^1.0
       version: 1.0.3
     socket.io-client:
-      specifier: latest
+      specifier: ^4.8
       version: 4.8.1
     typescript:
-      specifier: latest
+      specifier: ^5.9.2
       version: 5.9.2
     utf-8-validate:
-      specifier: latest
+      specifier: ^6.0
       version: 6.0.5
 
 importers:
@@ -60,7 +60,7 @@ importers:
   .:
     devDependencies:
       turbo:
-        specifier: ^2.5.5
+        specifier: ^2.5.6
         version: 2.5.6
       typescript:
         specifier: 'catalog:'
@@ -112,12 +112,12 @@ importers:
       '@ava/typescript':
         specifier: 'catalog:'
         version: 6.0.0
-      '@code-essentials/tsconfig':
-        specifier: 'catalog:'
-        version: 1.0.3(@tsconfig/node24@24.0.1)(@tsconfig/strictest@2.0.5)
       '@code-essentials/get-port':
         specifier: workspace:^
         version: link:../get-port
+      '@code-essentials/tsconfig':
+        specifier: 'catalog:'
+        version: 1.0.3(@tsconfig/node24@24.0.1)(@tsconfig/strictest@2.0.5)
       ava:
         specifier: 'catalog:'
         version: 6.4.1(@ava/typescript@6.0.0)
@@ -158,12 +158,12 @@ importers:
       '@ava/typescript':
         specifier: 'catalog:'
         version: 6.0.0
-      '@code-essentials/tsconfig':
-        specifier: 'catalog:'
-        version: 1.0.3(@tsconfig/node24@24.0.1)(@tsconfig/strictest@2.0.5)
       '@code-essentials/get-port':
         specifier: 'workspace:'
         version: link:../get-port
+      '@code-essentials/tsconfig':
+        specifier: 'catalog:'
+        version: 1.0.3(@tsconfig/node24@24.0.1)(@tsconfig/strictest@2.0.5)
       ava:
         specifier: 'catalog:'
         version: 6.4.1(@ava/typescript@6.0.0)
