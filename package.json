@@ -9,6 +9,7 @@
   "scripts": {
     "clean": "turbo run clean",
     "build": "turbo run build",
+    "pretest": "turbo run build:debug",
     "test": "turbo run test:run"
   },
   "keywords": [],
