@@ -29,24 +29,11 @@
   "devDependencies": {
     "@ava/typescript": "catalog:",
     "@code-essentials/tsconfig": "catalog:",
+    "@code-essentials/ava-typescript": "catalog:",
     "ava": "catalog:",
     "typescript": "catalog:",
     "@types/node": "catalog:",
     "@types/proper-lockfile": "catalog:"
-  },
-  "ava": {
-    "files": [
-      "src/**/*.spec.ts"
-    ],
-    "typescript": {
-      "rewritePaths": {
-        "src/": "dist/"
-      },
-      "extensions": [
-        "ts"
-      ],
-      "compile": false
-    }
   },
   "author": {
     "name": "Isaac Valdez",

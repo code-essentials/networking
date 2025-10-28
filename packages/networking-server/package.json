@@ -33,23 +33,10 @@
     "@code-essentials/get-port": "workspace:",
     "utf-8-validate": "catalog:",
     "@ava/typescript": "catalog:",
+    "@code-essentials/ava-typescript": "catalog:",
     "@code-essentials/tsconfig": "catalog:",
     "ava": "catalog:",
     "typescript": "catalog:"
-  },
-  "ava": {
-    "files": [
-      "src/**/*.spec.ts"
-    ],
-    "typescript": {
-      "rewritePaths": {
-        "src/": "dist/"
-      },
-      "extensions": [
-        "ts"
-      ],
-      "compile": false
-    }
   },
   "author": {
     "name": "Isaac Valdez",

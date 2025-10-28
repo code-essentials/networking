@@ -29,26 +29,13 @@
   "devDependencies": {
     "@ava/typescript": "catalog:",
     "@code-essentials/tsconfig": "catalog:",
+    "@code-essentials/ava-typescript": "catalog:",
     "@code-essentials/get-port": "workspace:^",
     "ava": "catalog:",
     "bufferutil": "catalog:",
     "socket.io": "catalog:",
     "typescript": "catalog:",
     "utf-8-validate": "catalog:"
-  },
-  "ava": {
-    "files": [
-      "src/**/*.spec.ts"
-    ],
-    "typescript": {
-      "rewritePaths": {
-        "src/": "dist/"
-      },
-      "extensions": [
-        "ts"
-      ],
-      "compile": false
-    }
   },
   "author": {
     "name": "Isaac Valdez",

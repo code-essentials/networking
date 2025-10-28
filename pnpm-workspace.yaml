@@ -2,22 +2,23 @@ packages:
   - packages/*
 
 catalog:
-  '@types/node': ^24.5
-  ava: ^6.4
   '@ava/typescript': ^6
-  typescript: ^5.9.2
+  '@code-essentials/ava-typescript': ^1.0
   '@code-essentials/tsconfig': ^1.0
   '@code-essentials/utils': ^1.0
-  get-port: ^7.1
-  proper-lockfile: ^4.1
-  '@types/proper-lockfile': ^4.1
-  socket.io: ^4.8
-  socket.io-client: ^4.8
-  socket.io-cbor-x-parser: ^1.0
-  utf-8-validate: ^6.0
-  bufferutil: ^4.0
   '@fails-components/webtransport': ^1.4
   '@fails-components/webtransport-transport-http3-quiche': ^1.4
+  '@types/node': ^24.5
+  '@types/proper-lockfile': ^4.1
+  ava: ^6.4
+  bufferutil: ^4.0
+  get-port: ^7.1
+  proper-lockfile: ^4.1
+  socket.io: ^4.8
+  socket.io-cbor-x-parser: ^1.0
+  socket.io-client: ^4.8
+  typescript: ^5.9.3
+  utf-8-validate: ^6.0
 
 onlyBuiltDependencies:
   - '@fails-components/webtransport-transport-http3-quiche'
