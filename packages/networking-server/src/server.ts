@@ -1,4 +1,4 @@
-import { HalfProtocolsToEvents, ServerNetworkProtocols, NetworkNode, NetworkNodeConnection, Protocols, SocketWith, parser, NetworkReadyProtocol, send } from '@code-essentials/networking'
+import { HalfProtocolsToEvents, ServerNetworkProtocols, NetworkNode, NetworkNodeConnection, Protocols, SocketWith, parser, NetworkReadyProtocol, send, NetworkNodeModulesFactory } from '@code-essentials/networking'
 import * as server from 'socket.io'
 import * as https from 'node:https'
 import * as http from 'node:http'
@@ -39,11 +39,23 @@ export interface ServerSettings {
     }
 }
 
-export type ServerNetworkNodeModules<Protocols_ extends ServerNetworkProtocols = ServerNetworkProtocols> = {
+export type ServerNetworkNodeModules<
+        _Protocols_ extends ServerNetworkProtocols = ServerNetworkProtocols
+    > = {
 }
 
-export const ServerNetworkNodeModules: ServerNetworkNodeModules = {
+export function ServerNetworkNodeModulesFactory<Protocols_ extends ServerNetworkProtocols = ServerNetworkProtocols>(): ServerNetworkNodeModules<Protocols_> {
+    return {
+    }
 }
+
+ServerNetworkNodeModulesFactory satisfies NetworkNodeModulesFactory<
+    Protocols,
+    ServerToClientNetworkNodeConnection,
+    ServerNetworkNodeModules,
+    void,
+    ServerNetworkNodeModules
+>
 
 export class ServerNetworkNode<
         Protocols_ extends ServerNetworkProtocols = ServerNetworkProtocols,

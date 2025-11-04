@@ -1,9 +1,68 @@
-import { ClientNetworkNode, ClientNetworkNodeModules, ClientNetworkProtocols, listen, NetworkNodeConnection, NetworkNodeModule, NetworkNodeModuleConnection, PeerToPeerProtocols, send, ServerNetworkProtocols } from '@code-essentials/networking'
-import { ServerNetworkNode, ServerNetworkNodeModules } from './server.js'
+import { ClientNetworkNode, ClientNetworkNodeModules, ClientNetworkNodeModulesFactory, ClientNetworkProtocols, listen, NetworkNodeConnection, NetworkNodeModule, NetworkNodeModuleConnection, NetworkNodeModulesFactory, PeerToPeerProtocols, Protocols, send, ServerNetworkProtocols } from '@code-essentials/networking'
+import { ServerNetworkNode, ServerNetworkNodeModulesFactory } from './server.js'
 import { getPort } from "@code-essentials/get-port"
 import { readFile } from "node:fs/promises"
 import test from "ava"
 import { AsyncVariable } from '@code-essentials/utils'
+
+const DelayConnectionInitializeModuleName = "delay"
+type DelayConnectionInitializeModuleName = typeof DelayConnectionInitializeModuleName
+
+class DelayConnectionInitializeModuleConnection<
+        Protocols_ extends Protocols = Protocols,
+    >
+    implements NetworkNodeModuleConnection<Protocols_> {
+    get module() {
+        return <any>this.connection.self.modules[DelayConnectionInitializeModuleName]
+    }
+
+    constructor(
+        readonly connection: NetworkNodeConnection<Protocols_>,
+    ) { }
+
+    async [Symbol.asyncDispose]() { }
+}
+
+interface DelayConnectionInitializeModuleSettings {
+    delay: number
+}
+
+function DelayConnectionInitializeModulesFactory<Protocols_ extends Protocols = Protocols>(settings: DelayConnectionInitializeModuleSettings) {
+    return {
+        [DelayConnectionInitializeModuleName]: new DelayConnectionInitializeModule<Protocols_>(settings),
+    }
+}
+
+DelayConnectionInitializeModulesFactory satisfies NetworkNodeModulesFactory<
+    Protocols,
+    NetworkNodeConnection,
+    DelayConnectionInitializeModules,
+    DelayConnectionInitializeModuleSettings,
+    DelayConnectionInitializeModules
+>
+
+type DelayConnectionInitializeModules<Protocols_ extends Protocols = Protocols> = {
+    [DelayConnectionInitializeModuleName]: DelayConnectionInitializeModule<Protocols_>
+}
+
+class DelayConnectionInitializeModule<Protocols_ extends Protocols = Protocols>
+    implements NetworkNodeModule<
+        Protocols_,
+        NetworkNodeConnection<Protocols_>,
+        DelayConnectionInitializeModules<Protocols_>,
+        DelayConnectionInitializeModuleConnection<Protocols_>,
+        DelayConnectionInitializeModuleSettings
+    > {
+    constructor(readonly settings: DelayConnectionInitializeModuleSettings) {}
+
+    async connect(connection: NetworkNodeConnection<Protocols_>) {
+        const moduleConnection = new DelayConnectionInitializeModuleConnection(connection)
+        await AsyncVariable.wait(this.settings.delay)
+        return <any>moduleConnection
+    }
+
+    async [Symbol.asyncDispose]() { }
+}
 
 test("server 1", async t => {
     type Protocols = PeerToPeerProtocols<{
@@ -17,13 +76,18 @@ test("server 1", async t => {
     } as const
 
     const modules = {
-        server: ServerNetworkNodeModules,
-        client: ClientNetworkNodeModules,
+        server: () => ({
+            ...ServerNetworkNodeModulesFactory(),
+        }),
+        client: () => ({
+            ...ClientNetworkNodeModulesFactory(),
+            // ...DelayConnectionInitializeModulesFactory({ delay: 2500 }),
+        }),
     } as const
 
-    await using server = new ServerNetworkNode<Protocols & ServerNetworkProtocols>(modules.server, {
+    await using server = new ServerNetworkNode<Protocols & ServerNetworkProtocols>(modules.server(), {
         httpOptions: {
-            port: port.port,
+            port: +port,
             cert,
             secret: "secret",
         },
@@ -34,9 +98,9 @@ test("server 1", async t => {
     await server.init()
     await server.start()
 
-    await using client = new ClientNetworkNode<Protocols & ClientNetworkProtocols>(<ClientNetworkNodeModules<Protocols & ClientNetworkProtocols>>modules.client)
+    await using client = new ClientNetworkNode<Protocols & ClientNetworkProtocols>(<ClientNetworkNodeModules<Protocols & ClientNetworkProtocols>>modules.client())
     await client.init()
-    await client.connect(`https://localhost:${port.port}`, {
+    await client.connect(`https://localhost:${port}`, {
         rejectUnauthorized: false,
     })
 
@@ -89,51 +153,20 @@ test("connect with server module connection initialize delay", async t => {
         key: await readFile(".cert/key.pem", { encoding: "utf-8" }),
     } as const
 
-    const DelayConnectionInitializeModuleName = "delay"
-    type DelayConnectionInitializeModuleName = typeof DelayConnectionInitializeModuleName
-
-    class DelayConnectionInitializeModuleConnection implements NetworkNodeModuleConnection {
-        get module() {
-            return <any>this.connection.self.modules[DelayConnectionInitializeModuleName]
-        }
-
-        constructor(
-            readonly connection: NetworkNodeConnection,
-        ) { }
-
-        async [Symbol.asyncDispose]() { }
-    }
-
-    class DelayConnectionInitializeModule implements NetworkNodeModule {
-        constructor(readonly delay: number) { }
-
-        async connect(connection: NetworkNodeConnection) {
-            const moduleConnection = new DelayConnectionInitializeModuleConnection(connection)
-            await AsyncVariable.wait(this.delay)
-            return <any>moduleConnection
-        }
-
-        async [Symbol.asyncDispose]() { }
-    }
-
-    const DelayConnectionInitializeModules = {
-        [DelayConnectionInitializeModuleName]: new DelayConnectionInitializeModule(2500),
-    } as const
-
     const modules = {
-        server: {
-            ...ServerNetworkNodeModules,
-            ...DelayConnectionInitializeModules,
-        },
-        client: {
-            ...ClientNetworkNodeModules,
-            // ...DelayConnectionInitializeModules,
-        }
+        server: () => ({
+            ...ServerNetworkNodeModulesFactory(),
+            ...DelayConnectionInitializeModulesFactory({ delay: 2500 }),
+        }),
+        client: () => ({
+            ...ClientNetworkNodeModulesFactory(),
+            // ...DelayConnectionInitializeModulesFactory({ delay: 2500 }),
+        }),
     } as const
 
-    await using server = new ServerNetworkNode<Protocols & ServerNetworkProtocols>(modules.server, {
+    await using server = new ServerNetworkNode<Protocols & ServerNetworkProtocols>(modules.server(), {
         httpOptions: {
-            port: port.port,
+            port: +port,
             cert,
             secret: "secret",
         },
@@ -144,9 +177,9 @@ test("connect with server module connection initialize delay", async t => {
     await server.init()
     await server.start()
 
-    await using client = new ClientNetworkNode<Protocols & ClientNetworkProtocols>(<ClientNetworkNodeModules<Protocols & ClientNetworkProtocols>><any>modules.client)
+    await using client = new ClientNetworkNode<Protocols & ClientNetworkProtocols>(<ClientNetworkNodeModules<Protocols & ClientNetworkProtocols>>modules.client())
     await client.init()
-    await client.connect(`https://localhost:${port.port}`, {
+    await client.connect(`https://localhost:${port}`, {
         rejectUnauthorized: false,
     })
 
@@ -199,51 +232,20 @@ test("connect with client module connection initialize delay", async t => {
         key: await readFile(".cert/key.pem", { encoding: "utf-8" }),
     } as const
 
-    const DelayConnectionInitializeModuleName = "delay"
-    type DelayConnectionInitializeModuleName = typeof DelayConnectionInitializeModuleName
-
-    class DelayConnectionInitializeModuleConnection implements NetworkNodeModuleConnection {
-        get module() {
-            return <any>this.connection.self.modules[DelayConnectionInitializeModuleName]
-        }
-
-        constructor(
-            readonly connection: NetworkNodeConnection,
-        ) { }
-
-        async [Symbol.asyncDispose]() { }
-    }
-
-    class DelayConnectionInitializeModule implements NetworkNodeModule {
-        constructor(readonly delay: number) { }
-
-        async connect(connection: NetworkNodeConnection) {
-            const moduleConnection = new DelayConnectionInitializeModuleConnection(connection)
-            await AsyncVariable.wait(this.delay)
-            return <any>moduleConnection
-        }
-
-        async [Symbol.asyncDispose]() { }
-    }
-
-    const DelayConnectionInitializeModules = {
-        [DelayConnectionInitializeModuleName]: new DelayConnectionInitializeModule(2500),
-    } as const
-
     const modules = {
-        server: {
-            ...ServerNetworkNodeModules,
-            // ...DelayConnectionInitializeModules,
-        },
-        client: {
-            ...ClientNetworkNodeModules,
-            ...DelayConnectionInitializeModules,
-        }
+        server: () => ({
+            ...ServerNetworkNodeModulesFactory(),
+            // ...DelayConnectionInitializeModulesFactory({ delay: 2500 }),
+        }),
+        client: () => ({
+            ...ClientNetworkNodeModulesFactory(),
+            ...DelayConnectionInitializeModulesFactory<Protocols>({ delay: 2500 }),
+        }),
     } as const
 
-    await using server = new ServerNetworkNode<Protocols & ServerNetworkProtocols>(modules.server, {
+    await using server = new ServerNetworkNode<Protocols & ServerNetworkProtocols>(modules.server(), {
         httpOptions: {
-            port: port.port,
+            port: +port,
             cert,
             secret: "secret",
         },
@@ -254,9 +256,9 @@ test("connect with client module connection initialize delay", async t => {
     await server.init()
     await server.start()
 
-    await using client = new ClientNetworkNode<Protocols & ClientNetworkProtocols>(<ClientNetworkNodeModules<Protocols & ClientNetworkProtocols>><any>modules.client)
+    await using client = new ClientNetworkNode<Protocols & ClientNetworkProtocols>(<ClientNetworkNodeModules<Protocols & ClientNetworkProtocols>><any>modules.client())
     await client.init()
-    await client.connect(`https://localhost:${port.port}`, {
+    await client.connect(`https://localhost:${port}`, {
         rejectUnauthorized: false,
     })
 
