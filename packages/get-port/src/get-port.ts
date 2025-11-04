@@ -11,8 +11,11 @@ export const lockOptionsDefault: LockOptions = {
     retries: 3,
 }
 
-export interface Port extends AsyncDisposable {
-    port: number
+export interface Port<Number_ extends number = number> extends AsyncDisposable {
+    readonly port: Number_
+
+    toString(): `${Number_}`
+    valueOf(): Number_
 }
 
 export interface GetPortOptions {
@@ -51,7 +54,9 @@ export async function getPort(options?: GetPortOptions): Promise<Port> {
                 async [Symbol.asyncDispose]() {
                     await release()
                     await unlink(path)
-                }
+                },
+                toString: <Port['toString']>(() =>`${port}`),
+                valueOf: <Port['valueOf']>(() => port),
             }
         }
         catch (e) {

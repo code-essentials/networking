@@ -27,3 +27,15 @@ for (let i = 0; i < n; i++) {
         t.pass()
     })
 }
+
+test('valueOf', async t => {
+    await using port = await getPort()
+
+    t.is(+port, port.port)
+})
+
+test('toString', async t => {
+    await using port = await getPort()
+
+    t.is(`${port}`, port.port.toString())
+})
