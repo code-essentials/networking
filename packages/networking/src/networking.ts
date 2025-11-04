@@ -31,10 +31,34 @@ export interface NetworkNodeModule<
         out Connection extends
             NetworkNodeModuleConnection<Protocols_, SelfToPeer, Modules> =
             NetworkNodeModuleConnection<Protocols_, SelfToPeer, Modules>,
+        Settings = any,
     > extends AsyncDisposable {
+    readonly settings: Settings
+    
     init?(self: NetworkNode<Protocols_, SelfToPeer, Modules>): Promise<void> | void
     connect(connection: SelfToPeer): Connection | Promise<Connection>
 }
+
+export type NetworkNodeModuleSettings<Module> =
+    Module extends NetworkNodeModule<
+        infer _Protocols,
+        infer _SelfToPeer,
+        infer _Modules,
+        infer _Connection,
+        infer Settings
+    > ? Settings : never
+
+export type NetworkNodeModulesFactory<
+        out Protocols_ extends Protocols = Protocols,
+        out SelfToPeer extends
+            NetworkNodeConnection<Protocols_> =
+            NetworkNodeConnection<Protocols_>,
+        out Modules extends
+            NetworkNodeModules<Protocols_, SelfToPeer> =
+            NetworkNodeModules<Protocols_, SelfToPeer>,
+        Config = void,
+    > =
+    (config: Config) => Partial<Modules>
 
 export interface NetworkNodeModuleConnection<
         out Protocols_ extends Protocols = Protocols,
@@ -173,8 +197,11 @@ export class NetworkClientNodeModule<
         Protocols_,
         ClientToServerNetworkConnection<Protocols_>,
         ClientNetworkNodeModules<Protocols_>,
-        ClientNetworkNodeModuleConnection<Protocols_>
+        ClientNetworkNodeModuleConnection<Protocols_>,
+        never
     > {
+    readonly settings!: never
+    
     connect(connection: ClientToServerNetworkConnection<Protocols_>): ClientNetworkNodeModuleConnection<Protocols_> {
         return new ClientNetworkNodeModuleConnection(connection)
     }
@@ -237,9 +264,13 @@ export type ClientNetworkNodeModules<Protocols_ extends ClientNetworkProtocols =
     client: NetworkClientNodeModule<Protocols_>
 }
 
-export const ClientNetworkNodeModules: ClientNetworkNodeModules = {
+export const ClientNetworkNodeModulesFactory: NetworkNodeModulesFactory<
+        ClientNetworkProtocols,
+        ClientToServerNetworkConnection<ClientNetworkProtocols>,
+        ClientNetworkNodeModules
+    > = () => ({
     client: new NetworkClientNodeModule()
-}
+})
 
 export class ClientNetworkNode<
         Protocols_ extends ClientNetworkProtocols = ClientNetworkProtocols,
