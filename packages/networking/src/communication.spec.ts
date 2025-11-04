@@ -58,10 +58,10 @@ test("send/listen 1", async t => {
         })
     })
     
-    httpsServer.listen(port.port)
+    httpsServer.listen(+port)
 
     await Promise.all(new Array(10).fill(undefined).map(async _ => {
-        const clientToServer = await connect<ClientProtocols>(`https://localhost:${port.port}`, {
+        const clientToServer = await connect<ClientProtocols>(`https://localhost:${port}`, {
             rejectUnauthorized: false,
         })
 

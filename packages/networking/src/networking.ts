@@ -56,9 +56,10 @@ export type NetworkNodeModulesFactory<
         out Modules extends
             NetworkNodeModules<Protocols_, SelfToPeer> =
             NetworkNodeModules<Protocols_, SelfToPeer>,
-        Config = void,
+            Config = void,
+        Modules1 extends Partial<Modules> = Partial<Modules>,
     > =
-    (config: Config) => Partial<Modules>
+    (config: Config) => Modules1
 
 export interface NetworkNodeModuleConnection<
         out Protocols_ extends Protocols = Protocols,
@@ -108,7 +109,7 @@ export type NetworkNodeModules<
         out Protocols_ extends Protocols = Protocols,
         out SelfToPeer extends NetworkNodeConnection<Protocols_> = NetworkNodeConnection<Protocols_>,
     > = {
-    [module: string]: NetworkNodeModule<Protocols_, SelfToPeer>
+    [module: string | symbol]: NetworkNodeModule<Protocols_, SelfToPeer>
 }
 
 export type NetworkNodeModuleConnections<
@@ -261,16 +262,24 @@ export const ClientNetworkNodeModuleName = "client"
 export type ClientNetworkNodeModuleName = typeof ClientNetworkNodeModuleName
 
 export type ClientNetworkNodeModules<Protocols_ extends ClientNetworkProtocols = ClientNetworkProtocols> = {
-    client: NetworkClientNodeModule<Protocols_>
+    [ClientNetworkNodeModuleName]: NetworkClientNodeModule<Protocols_>
 }
 
-export const ClientNetworkNodeModulesFactory: NetworkNodeModulesFactory<
-        ClientNetworkProtocols,
-        ClientToServerNetworkConnection<ClientNetworkProtocols>,
-        ClientNetworkNodeModules
-    > = () => ({
-    client: new NetworkClientNodeModule()
-})
+// type ClientNetworkNodeModules<Protocols_ extends ClientNetworkProtocols = ClientNetworkProtocols> = ReturnType<typeof ClientNetworkNodeModulesFactory<Protocols_>>[ClientNetworkNodeModuleName]
+
+export function ClientNetworkNodeModulesFactory<Protocols_ extends ClientNetworkProtocols = ClientNetworkProtocols>() {
+    return ({
+        client: new NetworkClientNodeModule<Protocols_>()
+    })
+}
+
+ClientNetworkNodeModulesFactory satisfies NetworkNodeModulesFactory<
+    ClientNetworkProtocols,
+    ClientToServerNetworkConnection<ClientNetworkProtocols>,
+    ClientNetworkNodeModules,
+    void,
+    ClientNetworkNodeModules
+>
 
 export class ClientNetworkNode<
         Protocols_ extends ClientNetworkProtocols = ClientNetworkProtocols,
