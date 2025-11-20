@@ -2,12 +2,12 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "npm: build:debug",
+            "label": "npm: pretest (build:debug)",
             "type": "shell",
             "command": "npm",
             "args": [
                 "run-script",
-                "build:debug",
+                "pretest",
             ],
             "problemMatcher": [
                 "$tsc"

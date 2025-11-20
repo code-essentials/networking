@@ -5,12 +5,29 @@
             "request": "launch",
             "runtimeArgs": [
                 "run-script",
-                "test"
+                "test:run"
             ],
             "runtimeExecutable": "pnpm",
             "sourceMaps": true,
             "pauseForSourceMap": true,
-            "preLaunchTask": "npm: build:debug",
+            "preLaunchTask": "npm: pretest (build:debug)",
+            "internalConsoleOptions": "neverOpen",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "type": "node"
+        },
+        {
+            "name": "test (no build)",
+            "request": "launch",
+            "runtimeArgs": [
+                "run-script",
+                "test:run"
+            ],
+            "runtimeExecutable": "pnpm",
+            "sourceMaps": true,
+            "pauseForSourceMap": true,
+            // "preLaunchTask": "npm: pretest (build:debug)",
             "internalConsoleOptions": "neverOpen",
             "skipFiles": [
                 "<node_internals>/**"
