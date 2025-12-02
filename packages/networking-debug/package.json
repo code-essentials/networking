@@ -1,0 +1,22 @@
+{
+  "name": "networking-debug",
+  "version": "0.1.0",
+  "private": true,
+  "main": "src/main.js",
+  "scripts": {
+    "start": "node src/cli.js",
+    "start:dev": "electron .",
+    "test-parser": "node src/parser.js"
+  },
+  "bin": {
+    "networking-debug": "bin/networking-debug"
+  },
+  "files": [
+    "src/**",
+    "bin/**",
+    "README.md"
+  ],
+  "devDependencies": {
+    "electron": "^26.0.0"
+  }
+}

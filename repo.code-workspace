@@ -1,0 +1,20 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "packages/get-port"
+		},
+		{
+			"path": "packages/networking"
+		},
+		{
+			"path": "packages/networking-server"
+		},
+		{
+			"path": "packages/networking-debug"
+		},
+	],
+	"settings": {}
+}

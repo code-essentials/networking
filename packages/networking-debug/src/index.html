@@ -1,0 +1,39 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Socket.IO Event Debugger</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 0; padding: 0 }
+      header { padding: 12px; background: #222; color: #fff }
+      .log-container { height: calc(100vh - 50px); overflow: auto }
+
+      /* Table layout: keep TS narrow and let other columns share remaining space */
+      table { width: 100%; border-collapse: collapse; table-layout: fixed }
+      thead th { text-align: left; padding: 8px; border-bottom: 1px solid #eee }
+      td { padding: 8px; border-bottom: 1px solid #eee; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+
+      /* TS column fixed width */
+      th:nth-child(1), td:nth-child(1) { width: 160px; min-width: 120px; max-width: 240px }
+
+      /* Remaining four columns share the rest equally */
+      th:nth-child(n+2), td:nth-child(n+2) { width: calc((100% - 160px) / 4) }
+
+      .status-success { background: #e6ffed }
+      .status-pending { background: #fff8e6 }
+      .status-timeout { background: #ffecec }
+    </style>
+  </head>
+  <body>
+    <header><h3>Socket.IO Event Debugger</h3></header>
+    <div class="log-container">
+      <table id="log">
+        <thead>
+          <tr><th>TS</th><th>Event</th><th>Client</th><th>Server</th><th>Status</th></tr>
+        </thead>
+        <tbody id="log-body"></tbody>
+      </table>
+    </div>
+    <script src="renderer.js"></script>
+  </body>
+</html>

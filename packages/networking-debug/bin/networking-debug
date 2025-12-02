@@ -1,0 +1,11 @@
+#!/usr/bin/env node
+// shim that forwards to package-local CLI implementation
+const path = require('path')
+const fs = require('fs')
+
+const cliPath = path.join(__dirname, '..', 'src', 'cli.js')
+if (!fs.existsSync(cliPath)) {
+  console.error('Cannot find local CLI at', cliPath)
+  process.exit(1)
+}
+require(cliPath)
