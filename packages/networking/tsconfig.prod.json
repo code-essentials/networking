@@ -1,0 +1,9 @@
+{
+    "extends": "@code-essentials/tsconfig/tsconfig.prod.json",
+    "compilerOptions": {
+        "outDir": "dist",
+        "rootDir": "src",
+    },
+    "include": ["src"],
+    "exclude": ["node_modules", "src/**/*.spec.ts", "test"],
+}

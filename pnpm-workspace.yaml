@@ -3,9 +3,9 @@ packages:
 
 catalog:
   '@ava/typescript': ^6
-  '@code-essentials/ava-typescript': ^1.0
-  '@code-essentials/tsconfig': ^1.0
-  '@code-essentials/utils': ^1.0
+  '@code-essentials/ava-typescript': ^1.1
+  '@code-essentials/tsconfig': ^1.2
+  '@code-essentials/utils': ^1.1
   '@fails-components/webtransport': ^1.4
   '@fails-components/webtransport-transport-http3-quiche': ^1.4
   '@types/node': ^24.5
@@ -24,4 +24,5 @@ onlyBuiltDependencies:
   - '@fails-components/webtransport-transport-http3-quiche'
   - bufferutil
   - cbor-extract
+  - electron
   - utf-8-validate
