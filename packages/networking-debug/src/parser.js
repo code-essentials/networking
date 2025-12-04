@@ -12,6 +12,8 @@ class Parser extends EventEmitter {
     this.pendingServerRequests = new Map()
     this.LOG = []
     this.timeoutMs = config?.timeoutMs ?? 10_000
+    // live = true when parser is reading from piped stdin (streaming mode).
+    this.live = !!(process.stdin && !process.stdin.isTTY)
     // Only set up stdin reading when there is piped input. This avoids
     // consuming a terminal stdin when the app is started normally.
     if (process.stdin && !process.stdin.isTTY) {
@@ -42,27 +44,38 @@ class Parser extends EventEmitter {
       try { packet = JSON.parse(jsonMatch[1]) } catch (e) { packet = null }
     }
 
-    // Try to find explicit ack id patterns
-    const idMatch = line.match(/\b(?:id|ack id)\s*[:=]?\s*(\d+)/i) || (packet && packet.id ? [null, packet.id] : null)
+    // Try to find explicit ack id patterns (various log formats)
+    const idMatch = line.match(/\b(?:id|ack id)\s*[:=]?\s*(\d+)/i)
+      || line.match(/calling ack\s*(\d+)/i)
+      || line.match(/\back\s*(\d+)\b/i)
+      || (packet && packet.id ? [null, packet.id] : null)
     const ackId = idMatch ? Number(idMatch[1]) : (packet && typeof packet.id === 'number' ? packet.id : null)
 
-    // Determine type based on 'type' field or keywords: 2 = EVENT, 3 = ACK
-    const packetType = packet && packet.type !== undefined ? packet.type : (line.includes('writing packet') && line.includes('"type":2') ? 2 : (line.includes('"type":3') ? 3 : null))
+    // Determine type: prefer packet.type when present. Also detect 'calling ack' or 'sending ack' text.
+    let packetType = null
+    if (packet && packet.type !== undefined) packetType = packet.type
+    else if (/\b(?:sending ack|calling ack)\b/i.test(line) || /"type"\s*:\s*3/.test(line)) packetType = 3
+    else if (/\b(?:writing packet)\b/i.test(line) && /"type"\s*:\s*2/.test(line)) packetType = 2
 
     // If outbound event with ack id -> create request
     if (packetType === 2 && ackId != null && this._isOutbound(line)) {
       const entry = this._createLogEntry({ timestamp, event: this._extractEventName(line, packet), node: source, ackId, payload: packet.data || null, status: 'pending' })
       const map = source === 'Client' ? this.pendingClientRequests : this.pendingServerRequests
-      const timer = setTimeout(() => this._onTimeout(entry, map), this.timeoutMs)
+      // Only set a timeout when running in live (streaming) mode. When
+      // parsing a static file we should not artificially time out pending
+      // requests because their ACKs may appear later in the file.
+      const timer = this.live ? setTimeout(() => this._onTimeout(entry, map), this.timeoutMs) : null
       map.set(ackId, { entry, timer })
       this.emit('entry', entry)
       return
     }
 
     // If inbound ACK (type 3) -> correlate
-    if ((packetType === 3 || /got packet/.test(line) && /"type":3/.test(line)) && ackId != null && this._isInbound(line)) {
-      // ACK received by destination; find in opposite pending map
-      const targetMap = source === 'Client' ? this.pendingServerRequests : this.pendingClientRequests
+    if ((packetType === 3 || (/got packet/.test(line) && /"type":3/.test(line)) || /calling ack/.test(line)) && ackId != null && this._isInbound(line)) {
+      // ACK received by this node; find in the same-side pending map where
+      // the original request was stored (e.g., client-side pending map when
+      // client processes the ACK).
+      const targetMap = source === 'Client' ? this.pendingClientRequests : this.pendingServerRequests
       const record = targetMap.get(ackId)
       if (record) {
         clearTimeout(record.timer)
@@ -89,8 +102,11 @@ class Parser extends EventEmitter {
   }
 
   _detectSource(line) {
-    if (/socket.io-client:/.test(line)) return 'Client'
-    if (/socket.io:server|socket.io:socket|engine/.test(line)) return 'Server'
+    // Prefer explicit client marker first
+    if (/socket\.io-client\b/.test(line)) return 'Client'
+    // Generic socket.io logs (server-side) commonly use 'socket.io:' or 'socket.io' prefixes
+    // Also consider 'engine' which is part of engine.io/server logs
+    if (/\bsocket\.io\b|socket\.io:|\bengine\b/.test(line)) return 'Server'
     return 'Unknown'
   }
 

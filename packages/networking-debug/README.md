@@ -28,7 +28,14 @@ cat /path/to/debug.log | node src/parser.js
 
 The package provides a small CLI executable `networking-debug` (also available via `pnpm start` in the package) with these usage forms:
 
-- Pipe stdin into the app (recommended for quick debugging):
+- Study test results streaming (recommended for quick debugging):
+
+```bash
+# -c 1 to run ava tests in serial
+DEBUG=socket.io* pnpm test -c 1 | networking-debug
+```
+
+- Pipe stdin into the app (for any input stream):
 
 ```bash
 cat /path/to/debug.log | networking-debug

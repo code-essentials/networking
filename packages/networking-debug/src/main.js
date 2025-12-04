@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, dialog } = require('electron')
+const { app, BrowserWindow, Menu, dialog, ipcMain } = require('electron')
 const path = require('path')
 
 // Parser module will only read stdin if it's piped (parser.js checks process.stdin.isTTY)
@@ -74,9 +74,48 @@ app.whenReady().then(() => {
     ]
   }
 
-  const template = [fileMenu]
+  // Visibility state for different statuses; defaults to show all
+  const visibility = {
+    info: true,
+    success: true,
+    timeout: true,
+    pending: true,
+    other: true
+  }
+
+  // Visibility menu
+  const visibilityMenu = {
+    label: 'View',
+    submenu: [
+      { label: 'Show INFO', type: 'checkbox', checked: visibility.info, id: 'vis-info', click: (item) => { visibility.info = item.checked; broadcastVisibility('info', item.checked) } },
+      { label: 'Show SUCCESS', type: 'checkbox', checked: visibility.success, id: 'vis-success', click: (item) => { visibility.success = item.checked; broadcastVisibility('success', item.checked) } },
+      { label: 'Show TIMEOUT', type: 'checkbox', checked: visibility.timeout, id: 'vis-timeout', click: (item) => { visibility.timeout = item.checked; broadcastVisibility('timeout', item.checked) } },
+      { label: 'Show PENDING', type: 'checkbox', checked: visibility.pending, id: 'vis-pending', click: (item) => { visibility.pending = item.checked; broadcastVisibility('pending', item.checked) } },
+      { label: 'Show OTHER', type: 'checkbox', checked: visibility.other, id: 'vis-other', click: (item) => { visibility.other = item.checked; broadcastVisibility('other', item.checked) } }
+    ]
+  }
+
+  const template = [fileMenu, visibilityMenu]
   const menu = Menu.buildFromTemplate(template)
   Menu.setApplicationMenu(menu)
+
+  // Helper to notify renderer of visibility changes
+  function broadcastVisibility(name, checked) {
+    if (mainWindow && mainWindow.webContents) mainWindow.webContents.send('visibility-changed', { name, checked })
+  }
+
+  // Listen for visibility changes from renderer to update menu checkbox state
+  ipcMain.on('set-visibility', (event, { name, checked }) => {
+    if (visibility.hasOwnProperty(name)) {
+      visibility[name] = checked
+      // Update menu item if present
+      try {
+        const menuItem = menu.getMenuItemById(`vis-${name}`)
+        if (menuItem) menuItem.checked = checked
+      } catch (_) {}
+      broadcastVisibility(name, checked)
+    }
+  })
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
