@@ -5,5 +5,5 @@
         "rootDir": ".",
     },
     "include": ["src", "src/**/*.spec.ts", "test"],
-    "exclude": ["node_modules"],
+    "exclude": ["node_modules", "dist"],
 }
