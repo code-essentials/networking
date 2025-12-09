@@ -1,5 +1,5 @@
 import { io, ManagerOptions, Socket, SocketOptions } from "socket.io-client"
-import { AsyncVariable } from "@code-essentials/utils"
+import { AsyncVariable, entries, Entry } from "@code-essentials/utils"
 import * as Parser from "socket.io-cbor-x-parser"
 
 export type HalfProtocol = (...params: any[]) => any
@@ -51,7 +51,8 @@ export class ProtocolListener<Protocols_ extends Protocols = Protocols> implemen
         ) {
         this.#listeners = <Partial<HalfProtocolsToEvents<ListenProtocols<Protocols_>>>>
             Object.fromEntries(
-                <any>Object.entries(listeners)
+                <Entry<HalfProtocolsToEvents<ListenProtocols<Protocols_>>>[]>
+                entries(listeners)
                     .filter(([_, handler]) => handler !== undefined)
                     .map(
                         ([key, handler]) => [
@@ -60,7 +61,7 @@ export class ProtocolListener<Protocols_ extends Protocols = Protocols> implemen
                                 const callback = <Callback>parameters.splice(parameters.length - 1, 1)[0]!
 
                                 try {
-                                    const result = await handler.call(listeners, ...parameters)
+                                    const result = await handler!.call(listeners, ...parameters)
                                     callback([undefined, result])
                                 }
                                 catch (err) {
@@ -107,6 +108,8 @@ export function listen<
     return new ProtocolListener(socket, listeners, register)
 }
 
+export const ERR_TIMED_OUT = 'operation has timed out'
+
 export async function send<
         const Protocols_ extends Protocols = Protocols,
         Protocol_ extends keyof SendProtocols<Protocols_> = keyof SendProtocols<Protocols_>,
@@ -123,19 +126,23 @@ export async function send<
     for (let i = 0; !(result.complete || i === delivery.maxRetries); i++) {
         try {
             const [err, res] = <any>await socket_timeout.emitWithAck(<any>protocol, ...(<any>args))
-            if (err) await result.error(err)
+            if (err) await result.reject(err)
             else await result.set(res)
         }
         catch (x) {
-            if (x instanceof Error && x.message === 'operation has timed out')
-                continue
-        
-            await result.error(x)
+            switch ((x instanceof Error ? x.message : x)) {
+                case ERR_TIMED_OUT:
+                    continue
+                    
+                default:
+                    await result.reject(x)
+                    break
+            }
         }
     }
 
     if (!result.complete)
-        await result.error(new Error("timed out"))
+        await result.reject(new Error(ERR_TIMED_OUT))
 
     return await result
 }
