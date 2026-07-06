@@ -1,7 +1,7 @@
 {
   "name": "@code-essentials/get-port",
   "description": "",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -10,30 +10,36 @@
   ],
   "scripts": {
     "clean": "rm -rf dist",
-    "prebuild": "pnpm run clean",
+    "prebuild": "pnpm run clean && pnpm run lint",
     "prebuild:debug": "pnpm run clean",
-    "build": "tsc -p tsconfig.prod.json",
+    "build": "pnpm run build:prod",
+    "build:prod": "tsc -p tsconfig.prod.json",
     "build:debug": "tsc -p tsconfig.debug.json",
     "pretest": "pnpm run build:debug",
     "test": "pnpm run test:run",
     "keygen": "chmod +x ./scripts/keygen.sh && ./scripts/keygen.sh",
     "pretest:run": "pnpm run keygen",
     "test:run": "ava",
-    "prepublishOnly": "pnpm test && pnpm build"
+    "prepublishOnly": "pnpm test && pnpm build",
+    "lint": "eslint ."
   },
   "dependencies": {
+    "@code-essentials/utils": "catalog:",
     "get-port": "catalog:",
-    "proper-lockfile": "catalog:",
-    "@code-essentials/utils": "catalog:"
+    "proper-lockfile": "catalog:"
   },
   "devDependencies": {
     "@ava/typescript": "catalog:",
-    "@code-essentials/tsconfig": "catalog:",
     "@code-essentials/ava-typescript": "catalog:",
-    "ava": "catalog:",
-    "typescript": "catalog:",
+    "@code-essentials/eslint-config": "catalog:",
+    "@code-essentials/tsconfig": "catalog:",
     "@types/node": "catalog:",
-    "@types/proper-lockfile": "catalog:"
+    "eslint": "catalog:",
+    "@tsconfig/node24": "catalog:",
+    "@tsconfig/strictest": "catalog:",
+    "@types/proper-lockfile": "catalog:",
+    "ava": "catalog:",
+    "typescript": "catalog:"
   },
   "author": {
     "name": "Isaac Valdez",

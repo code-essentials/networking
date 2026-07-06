@@ -1,0 +1,9 @@
+{
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+        "outDir": "tmp",
+        "rootDir": ".",
+    },
+    "include": ["src", "src/**/*.spec.ts", "test", "eslint.config.mjs"],
+    "exclude": ["node_modules", "dist"],
+}
