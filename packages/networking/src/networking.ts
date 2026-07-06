@@ -117,32 +117,13 @@ export type NetworkNodeModules<
     [module: string | symbol]: NetworkNodeModule<Protocols, NetworkProtocols, SelfToPeer>
 }
 
-interface A { a: true }
-interface B extends A { b: true }
-interface C extends B { c: true }
-interface I<in X> { f(x: X): void }
-interface O<out X> { f: X }
-
-// eslint-disable-next-line prefer-const
-let i_a: I<A> = { f(a) { console.log(a.a) } }
-// eslint-disable-next-line prefer-const
-let i_b: I<B> = { f(b) { console.log(b.b) } }
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-i_b = i_a
-
-let o_a: O<A> = { f: { a: true } }
-// eslint-disable-next-line prefer-const
-let o_b: O<B> = { f: { a: true, b: true } }
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-o_a = o_b
-
 export type NetworkNodeModuleConnections<
-    NetworkProtocols extends Protocols = Protocols,
-    SelfToPeer extends NetworkNodeConnection<NetworkProtocols> = NetworkNodeConnection<NetworkProtocols>,
+    out NetworkProtocols extends Protocols = Protocols,
+    out SelfToPeer extends NetworkNodeConnection<NetworkProtocols> = NetworkNodeConnection<NetworkProtocols>,
     out Modules extends NetworkNodeModules<NetworkProtocols, SelfToPeer> = NetworkNodeModules<NetworkProtocols, SelfToPeer>,
 > = {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        [module in keyof Modules]: Modules[module] extends NetworkNodeModule<Protocols, NetworkProtocols, SelfToPeer, infer _Modules, infer Connection> ?
+        [module in keyof Modules]: Modules[module] extends NetworkNodeModule<infer _Protocols, infer _NetworkProtocols, infer _SelfToPeer, infer _Modules, infer Connection> ?
         Connection :
         NetworkNodeModuleConnection<NetworkProtocols, SelfToPeer>
     }
@@ -227,12 +208,12 @@ export class NetworkClientNodeModule<
         NetworkProtocols,
         SelfToPeer,
         ClientNetworkNodeModules<NetworkProtocols, SelfToPeer>,
-        ClientNetworkNodeModuleConnection<NetworkProtocols>,
+        ClientNetworkNodeModuleConnection<NetworkProtocols, SelfToPeer>,
         never
     > {
     readonly settings!: never
 
-    connect(connection: ClientToServerNetworkConnection<NetworkProtocols>): ClientNetworkNodeModuleConnection<NetworkProtocols> {
+    connect(connection: SelfToPeer): ClientNetworkNodeModuleConnection<NetworkProtocols, SelfToPeer> {
         return new ClientNetworkNodeModuleConnection(connection)
     }
 
