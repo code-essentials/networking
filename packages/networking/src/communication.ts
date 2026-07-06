@@ -15,11 +15,8 @@ export interface Protocols<Send extends HalfProtocols = HalfProtocols, Listen ex
     listen: Listen
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export type SendProtocols<Protocols_ extends Protocols> = Protocols_ extends Protocols<infer Send, infer _Listen> ? Send : never
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export type ListenProtocols<Protocols_ extends Protocols> = Protocols_ extends Protocols<infer _Send, infer Listen> ? Listen : never
+export type SendProtocols<Protocols_ extends Protocols> = Protocols_["send"]
+export type ListenProtocols<Protocols_ extends Protocols> = Protocols_["listen"]
 
 export type PeerToPeerProtocols<HalfProtocols_ extends HalfProtocols> = Protocols<HalfProtocols_, HalfProtocols_>
 
@@ -197,7 +194,8 @@ export function deliveryWith<Protocols_ extends Protocols>(
 
 export type SocketWith<Protocols_ extends Protocols> = Socket<HalfProtocolsToEvents<Protocols_["listen"]>, HalfProtocolsToEvents<Protocols_["send"]>>
 
-export const parser = Parser
+export type Parser = typeof Parser
+export const parser: Parser = Parser
 
 export async function connect<Protocols_ extends Protocols>(...params: Parameters<typeof io>): Promise<SocketWith<Protocols_>> {
     const uri = typeof params[0] === 'string' ? params[0] : undefined
