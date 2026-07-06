@@ -17,7 +17,7 @@ for (let i = 0; i < n; i++) {
             server.close()
         }
 
-        const servers = new Array(parallel).fill(undefined).map(_ => server())
+        const servers = new Array(parallel).fill(undefined).map(() => server())
 
         await AsyncVariable.wait(2500)
         completed.set()
@@ -37,5 +37,6 @@ test('valueOf', async t => {
 test('toString', async t => {
     await using port = await getPort()
 
+    // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
     t.is(`${port}`, port.port.toString())
 })

@@ -55,12 +55,12 @@ export async function getPort(options?: GetPortOptions): Promise<Port> {
                     await release()
                     await unlink(path)
                 },
-                toString: <Port['toString']>(() =>`${port}`),
+                toString: <Port['toString']>(() => `${port}`),
                 valueOf: <Port['valueOf']>(() => port),
             }
         }
         catch (e) {
-            if (e && typeof e === 'object' && (<any>e)['code'] === 'ELOCKED')
+            if (e instanceof Object && (<{ code?: string }>e)['code'] === 'ELOCKED')
                 await AsyncVariable.wait(Math.random() * 100 + 100)
             else
                 throw e
