@@ -1,24 +1,40 @@
 packages:
   - packages/*
 
+allowBuilds:
+  '@fails-components/webtransport-transport-http3-quiche': true
+  bufferutil: true
+  cbor-extract: true
+  electron: true
+  utf-8-validate: true
+
 catalog:
-  '@ava/typescript': ^6
-  '@code-essentials/ava-typescript': ^1.1
-  '@code-essentials/tsconfig': ^1.2
-  '@code-essentials/utils': ^1.1
-  '@fails-components/webtransport': ^1.4
-  '@fails-components/webtransport-transport-http3-quiche': ^1.4
-  '@types/node': ^24.5
-  '@types/proper-lockfile': ^4.1
-  ava: ^6.4
-  bufferutil: ^4.0
-  get-port: ^7.1
-  proper-lockfile: ^4.1
-  socket.io: ^4.8
-  socket.io-cbor-x-parser: ^1.0
-  socket.io-client: ^4.8
-  typescript: ^5.9.3
-  utf-8-validate: ^6.0
+  '@ava/typescript': ^7.0.0
+  '@code-essentials/ava-typescript': ^1.1.3
+  '@code-essentials/eslint-config': ^1.0.3
+  '@code-essentials/tsconfig': ^1.2.8
+  '@code-essentials/utils': ^1.2.3
+  '@fails-components/webtransport': ^1.6.4
+  '@fails-components/webtransport-transport-http3-quiche': ^1.6.4
+  '@socket.io/component-emitter': ^3.1.2
+  '@tsconfig/node24': ^24.0.4
+  '@tsconfig/strictest': ^2.0.8
+  '@types/node': 24.12.4
+  '@types/proper-lockfile': ^4.1.4
+  ava: ^8.0.1
+  bufferutil: ^4.1.0
+  eslint: ^10.6.0
+  get-port: ^7.2.0
+  proper-lockfile: ^4.1.2
+  socket.io: ^4.8.3
+  socket.io-cbor-x-parser: ^1.0.3
+  socket.io-client: ^4.8.3
+  typescript: ^6.0.3
+  utf-8-validate: ^6.0.6
+
+minimumReleaseAgeExclude:
+  - '@code-essentials/utils@1.2.3'
+  - '@code-essentials/tsconfig@1.2.8'
 
 onlyBuiltDependencies:
   - '@fails-components/webtransport-transport-http3-quiche'
