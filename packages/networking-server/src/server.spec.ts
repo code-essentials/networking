@@ -9,15 +9,21 @@ const DelayConnectionInitializeModuleName = "delay"
 type DelayConnectionInitializeModuleName = typeof DelayConnectionInitializeModuleName
 
 class DelayConnectionInitializeModuleConnection<
-        Protocols_ extends Protocols = Protocols,
-    >
-    implements NetworkNodeModuleConnection<Protocols_> {
+    out Protocols_ extends Protocols = Protocols,
+    out NetworkProtocols extends Protocols_ = Protocols_,
+>
+    implements NetworkNodeModuleConnection<
+        NetworkProtocols,
+        NetworkNodeConnection<NetworkProtocols>,
+        DelayConnectionInitializeModules<Protocols_, NetworkProtocols>,
+        DelayConnectionInitializeModuleName
+    > {
     get module() {
-        return <any>this.connection.self.modules[DelayConnectionInitializeModuleName]
+        return <DelayConnectionInitializeModule<Protocols_, NetworkProtocols>>this.connection.self.modules[DelayConnectionInitializeModuleName]
     }
 
     constructor(
-        readonly connection: NetworkNodeConnection<Protocols_>,
+        readonly connection: NetworkNodeConnection<NetworkProtocols>,
     ) { }
 
     async [Symbol.asyncDispose]() { }
@@ -41,24 +47,31 @@ DelayConnectionInitializeModulesFactory satisfies NetworkNodeModulesFactory<
     DelayConnectionInitializeModules
 >
 
-type DelayConnectionInitializeModules<Protocols_ extends Protocols = Protocols> = {
-    [DelayConnectionInitializeModuleName]: DelayConnectionInitializeModule<Protocols_>
+type DelayConnectionInitializeModules<
+    out Protocols_ extends Protocols = Protocols,
+    out NetworkProtocols extends Protocols_ = Protocols_,
+> = {
+    [DelayConnectionInitializeModuleName]: DelayConnectionInitializeModule<Protocols_, NetworkProtocols>
 }
 
-class DelayConnectionInitializeModule<Protocols_ extends Protocols = Protocols>
+class DelayConnectionInitializeModule<
+    out Protocols_ extends Protocols = Protocols,
+    out NetworkProtocols extends Protocols_ = Protocols_,
+>
     implements NetworkNodeModule<
         Protocols_,
-        NetworkNodeConnection<Protocols_>,
-        DelayConnectionInitializeModules<Protocols_>,
-        DelayConnectionInitializeModuleConnection<Protocols_>,
+        NetworkProtocols,
+        NetworkNodeConnection<NetworkProtocols>,
+        DelayConnectionInitializeModules<Protocols_, NetworkProtocols>,
+        DelayConnectionInitializeModuleConnection<Protocols_, NetworkProtocols>,
         DelayConnectionInitializeModuleSettings
     > {
-    constructor(readonly settings: DelayConnectionInitializeModuleSettings) {}
+    constructor(readonly settings: DelayConnectionInitializeModuleSettings) { }
 
-    async connect(connection: NetworkNodeConnection<Protocols_>) {
-        const moduleConnection = new DelayConnectionInitializeModuleConnection(connection)
+    async connect(connection: NetworkNodeConnection<NetworkProtocols>) {
+        const moduleConnection = new DelayConnectionInitializeModuleConnection<Protocols_, NetworkProtocols>(connection)
         await AsyncVariable.wait(this.settings.delay)
-        return <any>moduleConnection
+        return moduleConnection
     }
 
     async [Symbol.asyncDispose]() { }
@@ -100,7 +113,7 @@ test("server 1", async t => {
 
     await using client = new ClientNetworkNode<Protocols & ClientNetworkProtocols>(<ClientNetworkNodeModules<Protocols & ClientNetworkProtocols>>modules.client())
     await client.init()
-    await client.connect(`https://localhost:${port}`, {
+    await client.connect(`https://localhost:${+port}`, {
         rejectUnauthorized: false,
     })
 
@@ -114,7 +127,7 @@ test("server 1", async t => {
     function lower(msg: string) {
         return msg.toLowerCase()
     }
-    
+
     listen(serverToClient.socket, {
         chat(msg) {
             console.log(`server->client: ${msg}`)
@@ -179,7 +192,7 @@ test("connect with server module connection initialize delay", async t => {
 
     await using client = new ClientNetworkNode<Protocols & ClientNetworkProtocols>(<ClientNetworkNodeModules<Protocols & ClientNetworkProtocols>>modules.client())
     await client.init()
-    await client.connect(`https://localhost:${port}`, {
+    await client.connect(`https://localhost:${+port}`, {
         rejectUnauthorized: false,
     })
 
@@ -193,7 +206,7 @@ test("connect with server module connection initialize delay", async t => {
     function lower(msg: string) {
         return msg.toLowerCase()
     }
-    
+
     listen(serverToClient.socket, {
         chat(msg) {
             console.log(`server->client: ${msg}`)
@@ -238,8 +251,8 @@ test("connect with client module connection initialize delay", async t => {
             // ...DelayConnectionInitializeModulesFactory({ delay: 2500 }),
         }),
         client: () => ({
-            ...ClientNetworkNodeModulesFactory(),
-            ...DelayConnectionInitializeModulesFactory<Protocols>({ delay: 2500 }),
+            ...ClientNetworkNodeModulesFactory<Protocols & ClientNetworkProtocols>(),
+            ...DelayConnectionInitializeModulesFactory<Protocols & ClientNetworkProtocols>({ delay: 2500 }),
         }),
     } as const
 
@@ -256,9 +269,9 @@ test("connect with client module connection initialize delay", async t => {
     await server.init()
     await server.start()
 
-    await using client = new ClientNetworkNode<Protocols & ClientNetworkProtocols>(<ClientNetworkNodeModules<Protocols & ClientNetworkProtocols>><any>modules.client())
+    await using client = new ClientNetworkNode<Protocols & ClientNetworkProtocols>(modules.client())
     await client.init()
-    await client.connect(`https://localhost:${port}`, {
+    await client.connect(`https://localhost:${+port}`, {
         rejectUnauthorized: false,
     })
 
@@ -272,7 +285,7 @@ test("connect with client module connection initialize delay", async t => {
     function lower(msg: string) {
         return msg.toLowerCase()
     }
-    
+
     listen(serverToClient.socket, {
         chat(msg) {
             console.log(`server->client: ${msg}`)

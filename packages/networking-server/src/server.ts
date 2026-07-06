@@ -1,29 +1,31 @@
-import { HalfProtocolsToEvents, ServerNetworkProtocols, NetworkNode, NetworkNodeConnection, Protocols, SocketWith, parser, NetworkReadyProtocol, send, NetworkNodeModulesFactory } from '@code-essentials/networking'
+import { HalfProtocolsToEvents, ServerNetworkProtocols, NetworkNode, NetworkNodeConnection, Protocols, SocketWith, parser, NetworkReadyProtocol, send, NetworkNodeModulesFactory, type ListenProtocols, type SendProtocols } from '@code-essentials/networking'
 import * as server from 'socket.io'
 import * as https from 'node:https'
 import * as http from 'node:http'
 import { Http3Server } from '@fails-components/webtransport'
 import { AsyncVariable } from '@code-essentials/utils'
 
+export type ServerSideEvents = server.DefaultEventsMap
+
 export type ServerWith<
-        Protocols_ extends Protocols,
-        SocketInfo = unknown,
-    > =
+    NetworkProtocols extends Protocols,
+    SocketInfo = unknown,
+> =
     server.Server<
-        HalfProtocolsToEvents<Protocols_["listen"]>,
-        HalfProtocolsToEvents<Protocols_["send"]>,
-        {},
+        HalfProtocolsToEvents<ListenProtocols<NetworkProtocols>>,
+        HalfProtocolsToEvents<SendProtocols<NetworkProtocols>>,
+        ServerSideEvents,
         SocketInfo
     >
 
 export type ServerSocketWith<
-        Protocols_ extends Protocols,
-        SocketInfo = unknown,
-    > =
+    NetworkProtocols extends Protocols,
+    SocketInfo = unknown,
+> =
     server.Socket<
-        HalfProtocolsToEvents<Protocols_["listen"]>,
-        HalfProtocolsToEvents<Protocols_["send"]>,
-        {},
+        HalfProtocolsToEvents<ListenProtocols<NetworkProtocols>>,
+        HalfProtocolsToEvents<SendProtocols<NetworkProtocols>>,
+        ServerSideEvents,
         SocketInfo
     >
 
@@ -40,11 +42,14 @@ export interface ServerSettings {
 }
 
 export type ServerNetworkNodeModules<
-        _Protocols_ extends ServerNetworkProtocols = ServerNetworkProtocols
-    > = {
-}
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _NetworkProtocols extends ServerNetworkProtocols = ServerNetworkProtocols
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+> = {}
 
-export function ServerNetworkNodeModulesFactory<Protocols_ extends ServerNetworkProtocols = ServerNetworkProtocols>(): ServerNetworkNodeModules<Protocols_> {
+export function ServerNetworkNodeModulesFactory<
+    NetworkProtocols extends ServerNetworkProtocols = ServerNetworkProtocols
+>(): ServerNetworkNodeModules<NetworkProtocols> {
     return {
     }
 }
@@ -58,16 +63,22 @@ ServerNetworkNodeModulesFactory satisfies NetworkNodeModulesFactory<
 >
 
 export class ServerNetworkNode<
-        Protocols_ extends ServerNetworkProtocols = ServerNetworkProtocols,
-        Modules extends ServerNetworkNodeModules = ServerNetworkNodeModules,
-        SocketInfo = unknown,
-    >
+    NetworkProtocols extends ServerNetworkProtocols = ServerNetworkProtocols,
+    Modules extends ServerNetworkNodeModules = ServerNetworkNodeModules,
+    SocketInfo = unknown,
+>
     extends NetworkNode<
-        Protocols_,
-        ServerToClientNetworkNodeConnection<Protocols_, Modules, SocketInfo>,
+        NetworkProtocols,
+        ServerToClientNetworkNodeConnection<NetworkProtocols, Modules, SocketInfo>,
         Modules
     > {
-    readonly #io: server.Server<HalfProtocolsToEvents<Protocols_["listen"]>, HalfProtocolsToEvents<Protocols_["send"]>>
+    readonly #io: server.Server<
+        HalfProtocolsToEvents<ListenProtocols<NetworkProtocols>>,
+        HalfProtocolsToEvents<SendProtocols<NetworkProtocols>>,
+        ServerSideEvents,
+        SocketInfo
+    >
+
     readonly #httpsServer?: https.Server
     readonly #httpServer?: http.Server
     readonly #http3Server?: Http3Server
@@ -80,17 +91,17 @@ export class ServerNetworkNode<
     static #defaults: ServerSettings = {
         serverOptions: {
             transports: ['websocket', 'webtransport', 'polling'],
-            parser,
+            parser: <unknown>parser,
         },
         httpOptions: {
             port: 3001,
         },
     }
-    
+
     constructor(
-            modules: Modules,
-            settings?: Partial<ServerSettings>
-        ) {
+        modules: Modules,
+        settings?: Partial<ServerSettings>
+    ) {
         super(modules)
 
         this.settings = {
@@ -103,7 +114,7 @@ export class ServerNetworkNode<
                 ...settings?.serverOptions,
             },
         }
-        
+
         if (this.settings.httpOptions.cert) {
             this.#httpsServer = https.createServer({
                 cert: this.settings.httpOptions.cert.cert,
@@ -123,19 +134,19 @@ export class ServerNetworkNode<
 
         this.#io.on("connection", async socket => {
             // console.log(`new connection: ${socket.conn.transport.name} ${socket.client.request.url} ${JSON.stringify(socket.handshake.auth)}`)
-            const connection = new ServerToClientNetworkNodeConnection(this, socket)
+            const connection = new ServerToClientNetworkNodeConnection<NetworkProtocols, Modules, SocketInfo>(this, socket)
             this.connections.push(connection)
             await connection.initialize()
-            
+
             const response = await send<ServerNetworkProtocols>(connection.socket, NetworkReadyProtocol)
             if (response !== NetworkReadyProtocol)
                 throw new Error(`${NetworkReadyProtocol} not acknowledged on client side`)
         })
 
-        if (this.settings.serverOptions.transports?.includes("webtransport")) {
+        if (this.settings.serverOptions.transports?.includes("webtransport") ?? false) {
             if (!this.settings.httpOptions.cert)
                 throw new Error("must supply httpOptions.cert in webtransport")
-            if (!this.settings.httpOptions.secret)
+            if (this.settings.httpOptions.secret === undefined)
                 throw new Error("must supply httpOptions.secret in webtransport")
 
             this.#http3Server = new Http3Server({
@@ -156,13 +167,13 @@ export class ServerNetworkNode<
 
         if (this.#http3Server) {
             this.#http3Server.startServer()
-            this.#http3()
+            void this.#http3()
         }
     }
 
     async stop() {
         this.#io.disconnectSockets(true)
-        await AsyncVariable.performCallback(cb => this.#io.close(cb))
+        await AsyncVariable.callback(async cb => await this.#io.close(cb))
 
         this.#http3Server?.stopServer()
     }
@@ -177,29 +188,29 @@ export class ServerNetworkNode<
         const reader = session.getReader()
 
         while (true) {
-            const { value, done } = await reader.read()
+            const { value, done } = <ReadableStreamReadResult<unknown>>await reader.read()
             if (done)
                 break
 
-            this.#io.engine.onWebTransportSession(value)
+            await this.#io.engine.onWebTransportSession(value)
         }
     }
 }
 
 class ServerToClientNetworkNodeConnection<
-        Protocols_ extends ServerNetworkProtocols = ServerNetworkProtocols,
-        Modules extends ServerNetworkNodeModules<Protocols_> = ServerNetworkNodeModules<Protocols_>,
-        SocketInfo = unknown,
-    >
+    Protocols_ extends ServerNetworkProtocols = ServerNetworkProtocols,
+    Modules extends ServerNetworkNodeModules<Protocols_> = ServerNetworkNodeModules<Protocols_>,
+    SocketInfo = unknown,
+>
     extends NetworkNodeConnection<Protocols_> {
     get serverSocket() {
         return <ServerSocketWith<Protocols_, SocketInfo>><unknown>this.socket
     }
 
     constructor(
-            self: ServerNetworkNode<Protocols_, Modules, SocketInfo>,
-            socket: ServerSocketWith<Protocols_, SocketInfo>
-        ) {
+        self: ServerNetworkNode<Protocols_, Modules, SocketInfo>,
+        socket: ServerSocketWith<Protocols_, SocketInfo>
+    ) {
         super(
             self,
             <SocketWith<Protocols_>><unknown>socket
@@ -208,7 +219,7 @@ class ServerToClientNetworkNodeConnection<
 
     override async [Symbol.asyncDispose](): Promise<void> {
         await super[Symbol.asyncDispose]()
-        
+
         this.serverSocket.disconnect(true)
     }
 }

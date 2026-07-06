@@ -1,9 +1,19 @@
 {
-    "extends": "@code-essentials/tsconfig/tsconfig.debug.json",
+    "extends": [
+        "./tsconfig.json",
+        "@code-essentials/tsconfig/tsconfig.debug.json"
+    ],
     "compilerOptions": {
         "outDir": "dist",
         "rootDir": ".",
     },
-    "include": ["src", "src/**/*.spec.ts", "test"],
-    "exclude": ["node_modules", "dist"],
+    "include": [
+        "src",
+        "src/**/*.spec.ts",
+        "test"
+    ],
+    "exclude": [
+        "node_modules",
+        "dist"
+    ],
 }

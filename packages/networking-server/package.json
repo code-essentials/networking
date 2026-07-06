@@ -1,7 +1,7 @@
 {
   "name": "@code-essentials/networking-server",
   "description": "",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -10,33 +10,40 @@
   ],
   "scripts": {
     "clean": "rm -rf dist",
-    "prebuild": "pnpm run clean",
+    "prebuild": "pnpm run clean && pnpm run lint",
     "prebuild:debug": "pnpm run clean",
-    "build": "tsc -p tsconfig.prod.json",
+    "build": "pnpm run build:prod",
+    "build:prod": "tsc -p tsconfig.prod.json",
     "build:debug": "tsc -p tsconfig.debug.json",
     "pretest": "pnpm run build:debug",
     "test": "pnpm run test:run",
     "keygen": "chmod +x ./scripts/keygen.sh && ./scripts/keygen.sh",
     "pretest:run": "pnpm run keygen",
     "test:run": "ava",
-    "prepublishOnly": "pnpm test && pnpm build"
+    "prepublishOnly": "pnpm test && pnpm build",
+    "lint": "eslint ."
   },
   "dependencies": {
+    "@code-essentials/networking": "workspace:^",
     "@code-essentials/utils": "catalog:",
-    "@code-essentials/networking": "workspace:",
-    "socket.io": "catalog:",
-    "bufferutil": "catalog:",
     "@fails-components/webtransport": "catalog:",
-    "@fails-components/webtransport-transport-http3-quiche": "catalog:"
+    "@fails-components/webtransport-transport-http3-quiche": "catalog:",
+    "bufferutil": "catalog:",
+    "socket.io": "catalog:"
   },
   "devDependencies": {
-    "@code-essentials/get-port": "workspace:",
-    "utf-8-validate": "catalog:",
     "@ava/typescript": "catalog:",
     "@code-essentials/ava-typescript": "catalog:",
+    "@code-essentials/eslint-config": "catalog:",
+    "@code-essentials/get-port": "workspace:^",
     "@code-essentials/tsconfig": "catalog:",
+    "@tsconfig/node24": "catalog:",
+    "@tsconfig/strictest": "catalog:",
+    "@types/node": "catalog:",
     "ava": "catalog:",
-    "typescript": "catalog:"
+    "eslint": "catalog:",
+    "typescript": "catalog:",
+    "utf-8-validate": "catalog:"
   },
   "author": {
     "name": "Isaac Valdez",
