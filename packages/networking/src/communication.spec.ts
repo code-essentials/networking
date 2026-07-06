@@ -36,11 +36,11 @@ test("send/listen 1", async t => {
     const clientDisposing: AsyncVariable<void>[] = []
 
     const svrFiles = new Map<string, Uint8Array>()
-    svr.on("connection", serverToClient => {
+    svr.on("connection", client => {
         const disposing = new AsyncVariable<void>()
         clientDisposing.push(disposing)
 
-        const listener = listen<ServerProtocols>(<SocketWith<ServerProtocols>><unknown>serverToClient, {
+        const listener = listen<ServerProtocols>(<SocketWith<ServerProtocols>><unknown>client, {
             donwload(file) {
                 const contents = svrFiles.get(file)
                 if (contents === undefined)
@@ -52,16 +52,16 @@ test("send/listen 1", async t => {
             },
         })
 
-        serverToClient.on("disconnect", async () => {
-            await disposing.set()
+        client.on("disconnect", () => {
+            disposing.set()
             listener[Symbol.dispose]()
         })
     })
-    
+
     httpsServer.listen(+port)
 
-    await Promise.all(new Array(10).fill(undefined).map(async _ => {
-        const clientToServer = await connect<ClientProtocols>(`https://localhost:${port}`, {
+    await Promise.all(new Array(10).fill(undefined).map(async () => {
+        const clientToServer = await connect<ClientProtocols>(`https://localhost:${+port}`, {
             rejectUnauthorized: false,
         })
 
@@ -71,7 +71,7 @@ test("send/listen 1", async t => {
         await send(clientToServer, "upload", "file2", file2)
         const donwloaded1 = await send(clientToServer, "donwload", "file1.txt")
         const donwloaded2 = await send(clientToServer, "donwload", "file2")
-        
+
         t.deepEqual(donwloaded1, file1)
         t.deepEqual(donwloaded2, file2)
         clientToServer.close()

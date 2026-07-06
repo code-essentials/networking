@@ -1,8 +1,10 @@
 import { io, ManagerOptions, Socket, SocketOptions } from "socket.io-client"
+import type { SocketReservedEvents, DecorateAcknowledgements, AllButLast } from "socket.io-client/build/esm"
 import { AsyncVariable, entries, Entry } from "@code-essentials/utils"
 import * as Parser from "socket.io-cbor-x-parser"
+import type { EventNames, EventsMap, ReservedOrUserEventNames, ReservedOrUserListener } from "@socket.io/component-emitter"
 
-export type HalfProtocol = (...params: any[]) => any
+export type HalfProtocol = (...params: never[]) => unknown
 
 export type HalfProtocols = {
     [event: string]: HalfProtocol
@@ -13,7 +15,10 @@ export interface Protocols<Send extends HalfProtocols = HalfProtocols, Listen ex
     listen: Listen
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export type SendProtocols<Protocols_ extends Protocols> = Protocols_ extends Protocols<infer Send, infer _Listen> ? Send : never
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export type ListenProtocols<Protocols_ extends Protocols> = Protocols_ extends Protocols<infer _Send, infer Listen> ? Listen : never
 
 export type PeerToPeerProtocols<HalfProtocols_ extends HalfProtocols> = Protocols<HalfProtocols_, HalfProtocols_>
@@ -45,19 +50,20 @@ export class ProtocolListener<Protocols_ extends Protocols = Protocols> implemen
     }
 
     constructor(
-            readonly socket: SocketWith<Protocols_>,
-            readonly listeners: Partial<ListenProtocols<Protocols_>>,
-            register = true,
-        ) {
+        readonly socket: SocketWith<Protocols_>,
+        readonly listeners: Partial<ListenProtocols<Protocols_>>,
+        register = true,
+    ) {
         this.#listeners = <Partial<HalfProtocolsToEvents<ListenProtocols<Protocols_>>>>
             Object.fromEntries(
                 <Entry<HalfProtocolsToEvents<ListenProtocols<Protocols_>>>[]>
                 entries(listeners)
+                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
                     .filter(([_, handler]) => handler !== undefined)
                     .map(
                         ([key, handler]) => [
                             key,
-                            async (...parameters: any[]) => {
+                            async (...parameters: never[]) => {
                                 const callback = <Callback>parameters.splice(parameters.length - 1, 1)[0]!
 
                                 try {
@@ -65,31 +71,42 @@ export class ProtocolListener<Protocols_ extends Protocols = Protocols> implemen
                                     callback([undefined, result])
                                 }
                                 catch (err) {
-                                    if (err instanceof Error)
-                                        err = err.stack ?? err.message
-                                    callback([err])
+                                    const callback_err =
+                                        err instanceof Error ?
+                                            err.stack ?? err.message :
+                                            err
+
+                                    callback([callback_err])
                                 }
                             }
                         ] as const
                     )
             )
-        
+
         this.registered = register
     }
 
     #register() {
         if (!this.#registered) {
             this.#registered = true
-            for (const [key, listener] of Object.entries(this.#listeners))
-                this.socket.on(key, listener)
+            type K = ReservedOrUserEventNames<SocketReservedEvents, EventsMap>
+            type L = ReservedOrUserListener<SocketReservedEvents, EventsMap, string>
+
+            for (const [key, listener] of entries(this.#listeners))
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+                this.socket.on(<K>key, <L>listener)
         }
     }
 
     #unregister() {
         if (this.#registered) {
             this.#registered = false
-            for (const [key, listener] of Object.entries(this.#listeners))
-                this.socket.off(key, listener)
+            type K = ReservedOrUserEventNames<SocketReservedEvents, EventsMap>
+            type L = ReservedOrUserListener<SocketReservedEvents, EventsMap, string>
+
+            for (const [key, listener] of entries(this.#listeners))
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+                this.socket.off(<K>key, <L>listener)
         }
     }
 
@@ -99,25 +116,25 @@ export class ProtocolListener<Protocols_ extends Protocols = Protocols> implemen
 }
 
 export function listen<
-        const Protocols_ extends Protocols = Protocols,
-    >(
-        socket: SocketWith<Protocols_>,
-        listeners: Partial<ListenProtocols<Protocols_>>,
-        register = true
-    ): ProtocolListener<Protocols_> {
+    const Protocols_ extends Protocols = Protocols,
+>(
+    socket: SocketWith<Protocols_>,
+    listeners: Partial<ListenProtocols<Protocols_>>,
+    register = true
+): ProtocolListener<Protocols_> {
     return new ProtocolListener(socket, listeners, register)
 }
 
 export const ERR_TIMED_OUT = 'operation has timed out'
 
 export async function send<
-        const Protocols_ extends Protocols = Protocols,
-        Protocol_ extends keyof SendProtocols<Protocols_> = keyof SendProtocols<Protocols_>,
-    >(
-        socket: SocketWith<Protocols_> | SocketWithDelivery<Protocols_>,
-        protocol: Protocol_,
-        ...args: Parameters<SendProtocols<Protocols_>[Protocol_]>
-    ): Promise<Awaited<ReturnType<SendProtocols<Protocols_>[Protocol_]>>> {
+    const Protocols_ extends Protocols = Protocols,
+    Protocol_ extends keyof SendProtocols<Protocols_> = keyof SendProtocols<Protocols_>,
+>(
+    socket: SocketWith<Protocols_> | SocketWithDelivery<Protocols_>,
+    protocol: Protocol_,
+    ...args: Parameters<SendProtocols<Protocols_>[Protocol_]>
+): Promise<Awaited<ReturnType<SendProtocols<Protocols_>[Protocol_]>>> {
     const result = new AsyncVariable<Awaited<ReturnType<SendProtocols<Protocols_>[Protocol_]>>>
     const socket_ = <SocketWith<Protocols_>>('delivery' in socket ? socket.socket : socket)
     const delivery = ('delivery' in socket ? socket.delivery : undefined) ?? defaultDeliveryParameters
@@ -125,24 +142,27 @@ export async function send<
 
     for (let i = 0; !(result.complete || i === delivery.maxRetries); i++) {
         try {
-            const [err, res] = <any>await socket_timeout.emitWithAck(<any>protocol, ...(<any>args))
-            if (err) await result.reject(err)
-            else await result.set(res)
+            type Protocol = string & EventNames<DecorateAcknowledgements<HalfProtocolsToEvents<SendProtocols<Protocols_>>>>
+            type Params = AllButLast<Parameters<DecorateAcknowledgements<HalfProtocolsToEvents<Protocols_["send"]>>[string & keyof SendProtocols<Protocols_>]>>
+            type Result = [err: unknown, res: Awaited<ReturnType<SendProtocols<Protocols_>[Protocol_]>>]
+            const [err, res] = <Result>await socket_timeout.emitWithAck<Protocol>(<Protocol>protocol, ...(<Params><unknown>args))
+            if (err !== undefined) result.reject(err)
+            else result.set(res)
         }
         catch (x) {
             switch ((x instanceof Error ? x.message : x)) {
                 case ERR_TIMED_OUT:
                     continue
-                    
+
                 default:
-                    await result.reject(x)
+                    result.reject(x)
                     break
             }
         }
     }
 
     if (!result.complete)
-        await result.reject(new Error(ERR_TIMED_OUT))
+        result.reject(new Error(ERR_TIMED_OUT))
 
     return await result
 }
@@ -163,9 +183,9 @@ export interface SocketWithDelivery<Protocols_ extends Protocols> {
 }
 
 export function deliveryWith<Protocols_ extends Protocols>(
-        socket: SocketWith<Protocols_>,
-        delivery?: Partial<DeliveryParameters>
-    ): SocketWithDelivery<Protocols_> {
+    socket: SocketWith<Protocols_>,
+    delivery?: Partial<DeliveryParameters>
+): SocketWithDelivery<Protocols_> {
     return {
         socket,
         delivery: {
@@ -194,5 +214,5 @@ export async function connect<Protocols_ extends Protocols>(...params: Parameter
     socket.connect()
     await connected
 
-    return <SocketWith<Protocols_>>socket
+    return socket
 }

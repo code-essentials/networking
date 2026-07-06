@@ -1,19 +1,17 @@
 import { AsyncVariable, ObservableList } from "@code-essentials/utils"
-import { connect, listen, ListenProtocols, PeerToPeerProtocols, ProtocolListener, Protocols, SocketWith } from "./communication.js"
+import { connect, listen, ListenProtocols, PeerToPeerProtocols, ProtocolListener, Protocols, SocketWith, type HalfProtocols } from "./communication.js"
 import { ManagerOptions, SocketOptions } from "socket.io-client"
 
 export const NetworkProtocolPrefix = "network"
 export const NetworkReadyProtocol = `${NetworkProtocolPrefix}.ready`
 
-type NetworkPeerProtocols = {
-}
+type NetworkPeerProtocols = HalfProtocols
 
 type NetworkServerToClientProtocols = {
     [NetworkReadyProtocol](): typeof NetworkReadyProtocol
 }
 
-type NetworkClientToServerProtocols = {
-}
+type NetworkClientToServerProtocols = HalfProtocols
 
 export type NetworkPeerToPeerProtocols = PeerToPeerProtocols<NetworkPeerProtocols>
 
@@ -21,116 +19,145 @@ export type ServerNetworkProtocols = NetworkPeerToPeerProtocols & Protocols<Netw
 export type ClientNetworkProtocols = NetworkPeerToPeerProtocols & Protocols<NetworkClientToServerProtocols, NetworkServerToClientProtocols>
 
 export interface NetworkNodeModule<
-        out Protocols_ extends Protocols = Protocols,
-        out SelfToPeer extends
-            NetworkNodeConnection<Protocols_> =
-            NetworkNodeConnection<Protocols_>,
-        out Modules extends
-            NetworkNodeModules<Protocols_, SelfToPeer> =
-            NetworkNodeModules<Protocols_, SelfToPeer>,
-        out Connection extends
-            NetworkNodeModuleConnection<Protocols_, SelfToPeer, Modules> =
-            NetworkNodeModuleConnection<Protocols_, SelfToPeer, Modules>,
-        Settings = any,
-    > extends AsyncDisposable {
+    out Protocols_ extends Protocols = Protocols,
+    out NetworkProtocols extends Protocols_ = Protocols_,
+    out SelfToPeer extends
+    NetworkNodeConnection<NetworkProtocols> =
+    NetworkNodeConnection<NetworkProtocols>,
+    out Modules extends
+    NetworkNodeModules<NetworkProtocols, SelfToPeer> =
+    NetworkNodeModules<NetworkProtocols, SelfToPeer>,
+    out Connection extends
+    NetworkNodeModuleConnection<NetworkProtocols, SelfToPeer, Modules> =
+    NetworkNodeModuleConnection<NetworkProtocols, SelfToPeer, Modules>,
+    Settings = unknown,
+> extends AsyncDisposable {
     readonly settings: Settings
-    
-    init?(self: NetworkNode<Protocols_, SelfToPeer, Modules>): Promise<void> | void
+
+    init?(self: NetworkNode<NetworkProtocols, SelfToPeer, Modules>): Promise<void> | void
     connect(connection: SelfToPeer): Connection | Promise<Connection>
 }
 
 export type NetworkNodeModuleSettings<Module> =
     Module extends NetworkNodeModule<
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         infer _Protocols,
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         infer _SelfToPeer,
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         infer _Modules,
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         infer _Connection,
         infer Settings
     > ? Settings : never
 
 export type NetworkNodeModulesFactory<
-        out Protocols_ extends Protocols = Protocols,
-        out SelfToPeer extends
-            NetworkNodeConnection<Protocols_> =
-            NetworkNodeConnection<Protocols_>,
-        out Modules extends
-            NetworkNodeModules<Protocols_, SelfToPeer> =
-            NetworkNodeModules<Protocols_, SelfToPeer>,
-            Config = void,
-        Modules1 extends Partial<Modules> = Partial<Modules>,
-    > =
+    out NetworkProtocols extends Protocols = Protocols,
+    out SelfToPeer extends
+    NetworkNodeConnection<NetworkProtocols> =
+    NetworkNodeConnection<NetworkProtocols>,
+    out Modules extends
+    NetworkNodeModules<NetworkProtocols, SelfToPeer> =
+    NetworkNodeModules<NetworkProtocols, SelfToPeer>,
+    Config = void,
+    Modules1 extends Partial<Modules> = Partial<Modules>,
+> =
     (config: Config) => Modules1
 
 export interface NetworkNodeModuleConnection<
-        out Protocols_ extends Protocols = Protocols,
-        out SelfToPeer extends
-            NetworkNodeConnection<Protocols_> =
-            NetworkNodeConnection<Protocols_>,
-        out Modules extends
-            NetworkNodeModules<Protocols_, SelfToPeer> =
-            NetworkNodeModules<Protocols_, SelfToPeer>,
-        out ModuleName extends keyof Modules = keyof Modules,
-    > extends AsyncDisposable {
+    out NetworkProtocols extends Protocols = Protocols,
+    out SelfToPeer extends
+    NetworkNodeConnection<NetworkProtocols> =
+    NetworkNodeConnection<NetworkProtocols>,
+    out Modules extends
+    NetworkNodeModules<NetworkProtocols, SelfToPeer> =
+    NetworkNodeModules<NetworkProtocols, SelfToPeer>,
+    out ModuleName extends keyof Modules = keyof Modules,
+> extends AsyncDisposable {
     readonly module: Modules[ModuleName]
     readonly connection: SelfToPeer
 }
 
 export abstract class ListeningNetworkNodeModuleConnection<
-        out Protocols_ extends Protocols = Protocols,
-        out SelfToPeer extends
-            NetworkNodeConnection<Protocols_> =
-            NetworkNodeConnection<Protocols_>,
-        out Modules extends
-            NetworkNodeModules<Protocols_, SelfToPeer> =
-            NetworkNodeModules<Protocols_, SelfToPeer>,
-        out ModuleName extends keyof Modules = keyof Modules,
-    >
-    implements NetworkNodeModuleConnection<Protocols_, SelfToPeer, Modules> {
+    out Protocols_ extends Protocols = Protocols,
+    out NetworkProtocols extends Protocols_ = Protocols_,
+    out SelfToPeer extends
+    NetworkNodeConnection<NetworkProtocols> =
+    NetworkNodeConnection<NetworkProtocols>,
+    out Modules extends
+    NetworkNodeModules<NetworkProtocols, SelfToPeer> =
+    NetworkNodeModules<NetworkProtocols, SelfToPeer>,
+    out ModuleName extends keyof Modules = keyof Modules,
+>
+    implements NetworkNodeModuleConnection<NetworkProtocols, SelfToPeer, Modules> {
     readonly listener: ProtocolListener<Protocols_>
     get module() {
         return <Modules[ModuleName]><unknown>this.connection.self.modules[this.moduleName]
     }
 
     constructor(
-            readonly connection: SelfToPeer,
-            readonly moduleName: ModuleName,
-        ) {
+        readonly connection: SelfToPeer,
+        readonly moduleName: ModuleName,
+    ) {
         this.listener = listen(this.connection.socket, this.listeners())
     }
 
     protected abstract listeners(): Partial<ListenProtocols<Protocols_>>
 
+    // eslint-disable-next-line @typescript-eslint/require-await
     async [Symbol.asyncDispose]() {
         this.listener[Symbol.dispose]()
     }
 }
 
 export type NetworkNodeModules<
-        out Protocols_ extends Protocols = Protocols,
-        out SelfToPeer extends NetworkNodeConnection<Protocols_> = NetworkNodeConnection<Protocols_>,
-    > = {
-    [module: string | symbol]: NetworkNodeModule<Protocols_, SelfToPeer>
+    out NetworkProtocols extends Protocols = Protocols,
+    out SelfToPeer extends NetworkNodeConnection<NetworkProtocols> = NetworkNodeConnection<NetworkProtocols>,
+> = {
+    [module: string | symbol]: NetworkNodeModule<Protocols, NetworkProtocols, SelfToPeer>
 }
+
+interface A { a: true }
+interface B extends A { b: true }
+interface C extends B { c: true }
+interface I<in X> { f(x: X): void }
+interface O<out X> { f: X }
+
+// eslint-disable-next-line prefer-const
+let i_a: I<A> = { f(a) { console.log(a.a) } }
+// eslint-disable-next-line prefer-const
+let i_b: I<B> = { f(b) { console.log(b.b) } }
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+i_b = i_a
+
+let o_a: O<A> = { f: { a: true } }
+// eslint-disable-next-line prefer-const
+let o_b: O<B> = { f: { a: true, b: true } }
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+o_a = o_b
 
 export type NetworkNodeModuleConnections<
-        Protocols_ extends Protocols = Protocols,
-        SelfToPeer extends NetworkNodeConnection<Protocols_> = NetworkNodeConnection<Protocols_>,
-        Modules extends NetworkNodeModules<Protocols_, SelfToPeer> = NetworkNodeModules<Protocols_, SelfToPeer>,
-    > = {
-    [module in keyof Modules]: Modules[module] extends NetworkNodeModule<Protocols_, SelfToPeer, infer _Modules, infer Connection> ? Connection : NetworkNodeModuleConnection<Protocols_, SelfToPeer>
-}
+    NetworkProtocols extends Protocols = Protocols,
+    SelfToPeer extends NetworkNodeConnection<NetworkProtocols> = NetworkNodeConnection<NetworkProtocols>,
+    out Modules extends NetworkNodeModules<NetworkProtocols, SelfToPeer> = NetworkNodeModules<NetworkProtocols, SelfToPeer>,
+> = {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        [module in keyof Modules]: Modules[module] extends NetworkNodeModule<Protocols, NetworkProtocols, SelfToPeer, infer _Modules, infer Connection> ?
+        Connection :
+        NetworkNodeModuleConnection<NetworkProtocols, SelfToPeer>
+    }
 
 export class NetworkNode<
-        Protocols_ extends Protocols = Protocols,
-        SelfToPeer extends NetworkNodeConnection<Protocols_> = NetworkNodeConnection<Protocols_>,
-        Modules extends NetworkNodeModules<Protocols_, SelfToPeer> = NetworkNodeModules<Protocols_, SelfToPeer>,
-    >
+    out NetworkProtocols extends Protocols = Protocols,
+    out SelfToPeer extends NetworkNodeConnection<NetworkProtocols> = NetworkNodeConnection<NetworkProtocols>,
+    out Modules extends NetworkNodeModules<NetworkProtocols, SelfToPeer> = NetworkNodeModules<NetworkProtocols, SelfToPeer>,
+>
     implements AsyncDisposable {
     readonly connections = new ObservableList<SelfToPeer>()
 
     constructor(
-            readonly modules: Modules
-        ) {
+        readonly modules: Modules
+    ) {
     }
 
     async init() {
@@ -143,12 +170,12 @@ export class NetworkNode<
 }
 
 export class NetworkNodeConnection<
-        out Protocols_ extends Protocols = Protocols,
-    >
+    out NetworkProtocols extends Protocols = Protocols,
+>
     implements AsyncDisposable {
-    readonly #self: NetworkNode<Protocols_>
-    readonly #socket: SocketWith<Protocols_>
-    readonly #connections = new AsyncVariable<NetworkNodeModuleConnections<Protocols_>>()
+    readonly #self: NetworkNode<NetworkProtocols>
+    readonly #socket: SocketWith<NetworkProtocols>
+    readonly #connections = new AsyncVariable<NetworkNodeModuleConnections<NetworkProtocols>>()
 
     get self() {
         return this.#self
@@ -163,9 +190,9 @@ export class NetworkNodeConnection<
     }
 
     constructor(
-            self: NetworkNode<Protocols_>,
-            socket: SocketWith<Protocols_>,
-        ) {
+        self: NetworkNode<NetworkProtocols>,
+        socket: SocketWith<NetworkProtocols>,
+    ) {
         this.#self = self
         this.#socket = socket
     }
@@ -179,7 +206,7 @@ export class NetworkNodeConnection<
     }
 
     async #initialize() {
-        return <NetworkNodeModuleConnections<Protocols_>>
+        return <NetworkNodeModuleConnections<NetworkProtocols>>
             Object.fromEntries(
                 await Promise.all(
                     Object.entries(this.self.modules)
@@ -192,18 +219,20 @@ export class NetworkNodeConnection<
 }
 
 export class NetworkClientNodeModule<
-        Protocols_ extends ClientNetworkProtocols = ClientNetworkProtocols,
-    >
+    out NetworkProtocols extends ClientNetworkProtocols = ClientNetworkProtocols,
+    out SelfToPeer extends ClientToServerNetworkConnection<NetworkProtocols> = ClientToServerNetworkConnection<NetworkProtocols>,
+>
     implements NetworkNodeModule<
-        Protocols_,
-        ClientToServerNetworkConnection<Protocols_>,
-        ClientNetworkNodeModules<Protocols_>,
-        ClientNetworkNodeModuleConnection<Protocols_>,
+        ClientNetworkProtocols,
+        NetworkProtocols,
+        SelfToPeer,
+        ClientNetworkNodeModules<NetworkProtocols, SelfToPeer>,
+        ClientNetworkNodeModuleConnection<NetworkProtocols>,
         never
     > {
     readonly settings!: never
-    
-    connect(connection: ClientToServerNetworkConnection<Protocols_>): ClientNetworkNodeModuleConnection<Protocols_> {
+
+    connect(connection: ClientToServerNetworkConnection<NetworkProtocols>): ClientNetworkNodeModuleConnection<NetworkProtocols> {
         return new ClientNetworkNodeModuleConnection(connection)
     }
 
@@ -211,12 +240,14 @@ export class NetworkClientNodeModule<
 }
 
 export class ClientNetworkNodeModuleConnection<
-        Protocols_ extends ClientNetworkProtocols = ClientNetworkProtocols
-    >
+    out NetworkProtocols extends ClientNetworkProtocols = ClientNetworkProtocols,
+    out SelfToPeer extends ClientToServerNetworkConnection<NetworkProtocols> = ClientToServerNetworkConnection<NetworkProtocols>,
+>
     extends ListeningNetworkNodeModuleConnection<
-        Protocols_,
-        ClientToServerNetworkConnection<Protocols_>,
-        ClientNetworkNodeModules<Protocols_>,
+        ClientNetworkProtocols,
+        NetworkProtocols,
+        SelfToPeer,
+        ClientNetworkNodeModules<NetworkProtocols, SelfToPeer>,
         ClientNetworkNodeModuleName
     > {
     readonly serverReady = new AsyncVariable<void>()
@@ -228,26 +259,26 @@ export class ClientNetworkNodeModuleConnection<
     }
 
     constructor(
-            connection: ClientToServerNetworkConnection<Protocols_>,
-            readonly serverReadyTimeout = 10_000
-        ) {
+        connection: SelfToPeer,
+        readonly serverReadyTimeout = 10_000
+    ) {
         super(
             connection,
             ClientNetworkNodeModuleName
         )
 
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         connection.socket.on("disconnect", async (_reason, _desc) => {
-            await this.#disposed.init()
             this.#disposing = true
             await connection[Symbol.asyncDispose]()
-            await this.#disposed.set()
+            this.#disposed.set()
         })
 
         this.serverReady.timeout(serverReadyTimeout)
     }
 
     protected override listeners() {
-        return <Partial<ListenProtocols<Protocols_>>>{
+        return <Partial<ListenProtocols<NetworkProtocols>>>{
             [NetworkReadyProtocol]: () => {
                 if (!this.serverReady.complete)
                     this.serverReady.set()
@@ -261,8 +292,11 @@ export class ClientNetworkNodeModuleConnection<
 export const ClientNetworkNodeModuleName = "client"
 export type ClientNetworkNodeModuleName = typeof ClientNetworkNodeModuleName
 
-export type ClientNetworkNodeModules<Protocols_ extends ClientNetworkProtocols = ClientNetworkProtocols> = {
-    [ClientNetworkNodeModuleName]: NetworkClientNodeModule<Protocols_>
+export type ClientNetworkNodeModules<
+    out NetworkProtocols extends ClientNetworkProtocols = ClientNetworkProtocols,
+    out SelfToPeer extends ClientToServerNetworkConnection<NetworkProtocols> = ClientToServerNetworkConnection<NetworkProtocols>,
+> = {
+    [ClientNetworkNodeModuleName]: NetworkClientNodeModule<NetworkProtocols, SelfToPeer>
 }
 
 // type ClientNetworkNodeModules<Protocols_ extends ClientNetworkProtocols = ClientNetworkProtocols> = ReturnType<typeof ClientNetworkNodeModulesFactory<Protocols_>>[ClientNetworkNodeModuleName]
@@ -282,13 +316,13 @@ ClientNetworkNodeModulesFactory satisfies NetworkNodeModulesFactory<
 >
 
 export class ClientNetworkNode<
-        Protocols_ extends ClientNetworkProtocols = ClientNetworkProtocols,
-        Modules extends ClientNetworkNodeModules & NetworkNodeModules<Protocols_, ClientToServerNetworkConnection<Protocols_>> = ClientNetworkNodeModules & NetworkNodeModules<Protocols_, ClientToServerNetworkConnection<Protocols_>>,
-    >
+    Protocols_ extends ClientNetworkProtocols = ClientNetworkProtocols,
+    Modules extends ClientNetworkNodeModules & NetworkNodeModules<Protocols_, ClientToServerNetworkConnection<Protocols_>> = ClientNetworkNodeModules & NetworkNodeModules<Protocols_, ClientToServerNetworkConnection<Protocols_>>,
+>
     extends NetworkNode<Protocols_, ClientToServerNetworkConnection<Protocols_>, Modules> {
     async connect(uri: string, options?: Partial<SocketOptions & ManagerOptions>) {
         const socket = await connect<Protocols_>(uri, options)
-        
+
         const connection = new ClientToServerNetworkConnection<Protocols_>(this, socket)
         this.connections.push(connection)
         await connection.initialize()
@@ -297,12 +331,12 @@ export class ClientNetworkNode<
     }
 }
 
-export class ClientToServerNetworkConnection<Protocols_ extends ClientNetworkProtocols = ClientNetworkProtocols>
-    extends NetworkNodeConnection<Protocols_> {
+export class ClientToServerNetworkConnection<NetworkProtocols extends ClientNetworkProtocols = ClientNetworkProtocols>
+    extends NetworkNodeConnection<NetworkProtocols> {
     constructor(
-            self: ClientNetworkNode<Protocols_>,
-            socket: SocketWith<Protocols_>,
-        ) {
+        self: ClientNetworkNode<NetworkProtocols>,
+        socket: SocketWith<NetworkProtocols>,
+    ) {
         super(self, socket)
     }
 
@@ -313,7 +347,7 @@ export class ClientToServerNetworkConnection<Protocols_ extends ClientNetworkPro
 
     override async initialize(): Promise<void> {
         await super.initialize()
-        const { client } = <NetworkNodeModuleConnections<Protocols_, ClientToServerNetworkConnection<Protocols_>, ClientNetworkNodeModules<Protocols_>>>this.connections
+        const { client } = <NetworkNodeModuleConnections<NetworkProtocols, ClientToServerNetworkConnection<NetworkProtocols>, ClientNetworkNodeModules<NetworkProtocols>>>this.connections
         await client.serverReady
     }
 }

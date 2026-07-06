@@ -10,16 +10,18 @@
   ],
   "scripts": {
     "clean": "rm -rf dist",
-    "prebuild": "pnpm run clean",
+    "prebuild": "pnpm run clean && pnpm run lint",
     "prebuild:debug": "pnpm run clean",
-    "build": "tsc -p tsconfig.prod.json",
+    "build": "pnpm run build:prod",
+    "build:prod": "tsc -p tsconfig.prod.json",
     "build:debug": "tsc -p tsconfig.debug.json",
     "pretest": "pnpm run build:debug",
     "test": "pnpm run test:run",
     "keygen": "chmod +x ./scripts/keygen.sh && ./scripts/keygen.sh",
     "pretest:run": "pnpm run keygen",
     "test:run": "ava",
-    "prepublishOnly": "pnpm test && pnpm build"
+    "prepublishOnly": "pnpm test && pnpm build",
+    "lint": "eslint ."
   },
   "dependencies": {
     "@code-essentials/utils": "catalog:",
@@ -27,13 +29,19 @@
     "socket.io-client": "catalog:"
   },
   "devDependencies": {
-    "@ava/typescript": "catalog:",
-    "@code-essentials/tsconfig": "catalog:",
-    "@code-essentials/ava-typescript": "catalog:",
     "@code-essentials/get-port": "workspace:^",
+    "@code-essentials/eslint-config": "catalog:",
+    "@code-essentials/tsconfig": "catalog:",
+    "@types/node": "catalog:",
+    "eslint": "catalog:",
+    "@tsconfig/node24": "catalog:",
+    "@tsconfig/strictest": "catalog:",
+    "@ava/typescript": "catalog:",
+    "@code-essentials/ava-typescript": "catalog:",
     "ava": "catalog:",
     "bufferutil": "catalog:",
     "socket.io": "catalog:",
+    "@socket.io/component-emitter": "catalog:",
     "typescript": "catalog:",
     "utf-8-validate": "catalog:"
   },
