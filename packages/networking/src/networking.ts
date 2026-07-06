@@ -282,9 +282,12 @@ export type ClientNetworkNodeModules<
 
 // type ClientNetworkNodeModules<Protocols_ extends ClientNetworkProtocols = ClientNetworkProtocols> = ReturnType<typeof ClientNetworkNodeModulesFactory<Protocols_>>[ClientNetworkNodeModuleName]
 
-export function ClientNetworkNodeModulesFactory<Protocols_ extends ClientNetworkProtocols = ClientNetworkProtocols>() {
+export function ClientNetworkNodeModulesFactory<
+    NetworkProtocols extends ClientNetworkProtocols = ClientNetworkProtocols,
+    SelfToPeer extends ClientToServerNetworkConnection<NetworkProtocols> = ClientToServerNetworkConnection<NetworkProtocols>,
+>() {
     return ({
-        client: new NetworkClientNodeModule<Protocols_>()
+        client: new NetworkClientNodeModule<NetworkProtocols, SelfToPeer>()
     })
 }
 
@@ -297,14 +300,14 @@ ClientNetworkNodeModulesFactory satisfies NetworkNodeModulesFactory<
 >
 
 export class ClientNetworkNode<
-    Protocols_ extends ClientNetworkProtocols = ClientNetworkProtocols,
-    Modules extends ClientNetworkNodeModules & NetworkNodeModules<Protocols_, ClientToServerNetworkConnection<Protocols_>> = ClientNetworkNodeModules & NetworkNodeModules<Protocols_, ClientToServerNetworkConnection<Protocols_>>,
+    out NetworkProtocols extends ClientNetworkProtocols = ClientNetworkProtocols,
+    out Modules extends ClientNetworkNodeModules & NetworkNodeModules<NetworkProtocols, ClientToServerNetworkConnection<NetworkProtocols>> = ClientNetworkNodeModules & NetworkNodeModules<NetworkProtocols, ClientToServerNetworkConnection<NetworkProtocols>>,
 >
-    extends NetworkNode<Protocols_, ClientToServerNetworkConnection<Protocols_>, Modules> {
+    extends NetworkNode<NetworkProtocols, ClientToServerNetworkConnection<NetworkProtocols>, Modules> {
     async connect(uri: string, options?: Partial<SocketOptions & ManagerOptions>) {
-        const socket = await connect<Protocols_>(uri, options)
+        const socket = await connect<NetworkProtocols>(uri, options)
 
-        const connection = new ClientToServerNetworkConnection<Protocols_>(this, socket)
+        const connection = new ClientToServerNetworkConnection<NetworkProtocols>(this, socket)
         this.connections.push(connection)
         await connection.initialize()
 
@@ -312,7 +315,9 @@ export class ClientNetworkNode<
     }
 }
 
-export class ClientToServerNetworkConnection<NetworkProtocols extends ClientNetworkProtocols = ClientNetworkProtocols>
+export class ClientToServerNetworkConnection<
+    out NetworkProtocols extends ClientNetworkProtocols = ClientNetworkProtocols
+>
     extends NetworkNodeConnection<NetworkProtocols> {
     constructor(
         self: ClientNetworkNode<NetworkProtocols>,
